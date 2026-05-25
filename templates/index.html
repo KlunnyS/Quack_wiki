@@ -9,16 +9,16 @@
     <p class="hero-subtitle">Fast. Brutal. Puzzle Shooter.</p>
     <div class="hero-actions">
         <a href="/play" class="btn btn-brand btn-lg">Play Game</a>
-        <a href="/overview" class="btn btn-outline-light btn-lg">Explore Wiki</a>
+        <a href="{{ url_for('articles') }}" class="btn btn-outline-light btn-lg">Explore Wiki</a>
     </div>
 </section>
 
 <section class="row g-4">
     <div class="col-md-6 col-xl-4">
         <article class="card h-100 p-4 info-card">
-            <h5>Game Overview</h5>
-            <p>Core mechanics, movement tech, and gameplay systems.</p>
-            <a href="/overview" class="btn btn-outline-light btn-sm">Open</a>
+            <h5>Published Articles</h5>
+            <p>Browse all approved wiki pages from the community.</p>
+            <a href="{{ url_for('articles') }}" class="btn btn-outline-light btn-sm">Open</a>
         </article>
     </div>
     <div class="col-md-6 col-xl-4">

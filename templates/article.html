@@ -3,69 +3,69 @@
 {% block title %}{{ article.title }} - Quack Wiki{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-0">
-    <header class="mb-4">
+<div class="container-fluid px-0 article-wiki">
+    <header class="article-header mb-3">
         <h1 class="article-title">{{ article.title or "Untitled" }}</h1>
-        <p class="article-meta">by {{ article.author or "Unknown" }} | {{ article.created_at.strftime('%Y-%m-%d') if article.created_at else "Unknown date" }}</p>
+        <p class="article-meta mb-0">From Quack Wiki, the community knowledge base</p>
     </header>
 
-    <div class="row g-4">
+    <div class="article-toolbar d-flex gap-2 mb-3 flex-wrap">
+        {% if article.title|lower != 'about-us' %}
+        <a href="{{ url_for('create_article') }}" class="btn btn-outline-light btn-sm">New Article</a>
+        {% endif %}
+        {% if can_edit %}
+        <a href="{{ url_for('edit_article', article_id=article.id) }}" class="btn btn-outline-info btn-sm">Edit</a>
+        {% endif %}
+        {% if current_user.is_authenticated and current_user.role in ['admin'] %}
+            {% if article.status == 'approved' %}
+            <span class="badge bg-success align-self-center">Approved</span>
+            {% elif article.status == 'declined' %}
+            <span class="badge bg-danger align-self-center">Declined</span>
+            {% else %}
+            <form method="POST" action="{{ url_for('approve', article_id=article.id) }}">
+                <button class="btn btn-success btn-sm">Approve</button>
+            </form>
+            <form method="POST" action="{{ url_for('decline', article_id=article.id) }}">
+                <button class="btn btn-outline-danger btn-sm">Decline</button>
+            </form>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="row g-4 align-items-start">
         <div class="col-xl-8">
-            <section class="card p-4 mb-4">
-                <div class="row g-3 align-items-start">
-                    <div class="col-md-4">
-                        {% if article.image_url %}
-                        <img src="{{ article.image_url }}" class="img-fluid rounded" alt="{{ article.title }} image">
-                        {% else %}
-                        <div class="image-placeholder">No image</div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-8">
-                        <h5>Overview</h5>
-                        <p>{{ article.summary or "No summary available." }}</p>
-                    </div>
-                </div>
-            </section>
+            {% if article.summary %}
+            <p class="article-lead">{{ article.summary }}</p>
+            {% endif %}
 
-            <div class="d-flex gap-2 mb-3 flex-wrap">
-                <a href="{{ url_for('create_article') }}" class="btn btn-outline-light btn-sm">New Article</a>
-                {% if current_user.is_authenticated and current_user.role in ['admin'] %}
-                <form method="POST" action="{{ url_for('approve', article_id=article.id) }}">
-                    <button class="btn btn-success btn-sm">Approve</button>
-                </form>
-                <form method="POST" action="{{ url_for('decline', article_id=article.id) }}">
-                    <button class="btn btn-outline-danger btn-sm">Decline</button>
-                </form>
-                {% endif %}
-            </div>
-
-            <section class="card p-4 mb-4">
-                <div class="article-content">
-                    {{ article.content | safe }}
-                </div>
+            <section class="article-body">
+                {{ rendered_content | safe }}
             </section>
         </div>
 
         <aside class="col-xl-4">
-            {% if random_article %}
-            <section class="card p-4 mb-4">
-                <h5>Random Article</h5>
-                <h6 class="mt-2">{{ random_article.title }}</h6>
-                <p class="small text-muted">{{ random_article.summary[:100] if random_article.summary else "No description..." }}...</p>
-                <a href="{{ url_for('article', article_title=random_article.title) }}" class="btn btn-brand btn-sm mt-2">Read</a>
-            </section>
-            {% endif %}
-
-            {% if article.tags %}
-            <section class="card p-4">
-                <h5>Tags</h5>
-                <div class="d-flex gap-2 flex-wrap mt-2">
+            <section class="article-infobox">
+                <h5 class="infobox-title">{{ article.title }}</h5>
+                {% if article.image_url %}
+                <img src="{{ article.image_url }}" class="img-fluid rounded mb-2" alt="{{ article.title }} image">
+                {% else %}
+                <div class="image-placeholder mb-2">No image</div>
+                {% endif %}
+                <div class="infobox-grid">
+                    {% for label, value in infobox_rows %}
+                    <div class="infobox-label">{{ label }}</div>
+                    <div>{{ value }}</div>
+                    {% endfor %}
+                </div>
+                {% if article.tags %}
+                <h6 class="mt-3 mb-2">Tags</h6>
+                <div class="d-flex gap-2 flex-wrap">
                     {% for tag in article.tags %}
                     <span class="badge bg-secondary">{{ tag }}</span>
                     {% endfor %}
                 </div>
+                {% endif %}
             </section>
-            {% endif %}
         </aside>
     </div>
 </div>

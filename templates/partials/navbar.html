@@ -9,7 +9,8 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto nav-links">
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('articles') }}">Articles</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('create_article') }}">New Article</a></li>
                 {% if current_user.is_authenticated and current_user.role == "admin" %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard_users') }}">Dashboard</a></li>

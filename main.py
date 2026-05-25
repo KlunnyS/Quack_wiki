@@ -1,4 +1,7 @@
 from datetime import datetime
+import html
+import re
+from sqlalchemy import func, text
 from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
 
@@ -20,6 +23,10 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+    columns = [row[1] for row in db.session.execute(text("PRAGMA table_info(article)")).fetchall()]
+    if 'infobox_data' not in columns:
+        db.session.execute(text("ALTER TABLE article ADD COLUMN infobox_data TEXT"))
+        db.session.commit()
     seed_admin()
 
 login_manager = LoginManager()
@@ -44,6 +51,130 @@ def role_required(role_names: list):
         return wrapper
 
     return decorator
+
+
+def _inline_markdown(text: str) -> str:
+    text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
+    text = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', text)
+    text = re.sub(r'\*([^*]+)\*', r'<em>\1</em>', text)
+    text = re.sub(r'\[([^\]]+)\]\((https?://[^\s)]+)\)', r'<a href="\2" target="_blank" rel="noopener noreferrer">\1</a>', text)
+    return text
+
+
+def render_simple_markdown(raw_text: str) -> str:
+    if not raw_text:
+        return '<p>No content yet.</p>'
+
+    text = html.escape(raw_text.strip())
+    lines = text.splitlines()
+    blocks = []
+    in_ul = False
+    in_ol = False
+
+    def close_lists():
+        nonlocal in_ul, in_ol
+        if in_ul:
+            blocks.append('</ul>')
+            in_ul = False
+        if in_ol:
+            blocks.append('</ol>')
+            in_ol = False
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            close_lists()
+            continue
+
+        if stripped.startswith('### '):
+            close_lists()
+            blocks.append(f"<h3>{_inline_markdown(stripped[4:])}</h3>")
+            continue
+        if stripped.startswith('## '):
+            close_lists()
+            blocks.append(f"<h2>{_inline_markdown(stripped[3:])}</h2>")
+            continue
+        if stripped.startswith('# '):
+            close_lists()
+            blocks.append(f"<h1>{_inline_markdown(stripped[2:])}</h1>")
+            continue
+        if stripped.startswith('> '):
+            close_lists()
+            blocks.append(f"<blockquote>{_inline_markdown(stripped[2:])}</blockquote>")
+            continue
+        if re.match(r'^\d+\.\s+', stripped):
+            if in_ul:
+                blocks.append('</ul>')
+                in_ul = False
+            if not in_ol:
+                blocks.append('<ol>')
+                in_ol = True
+            item = re.sub(r'^\d+\.\s+', '', stripped)
+            blocks.append(f"<li>{_inline_markdown(item)}</li>")
+            continue
+        if stripped.startswith('- '):
+            if in_ol:
+                blocks.append('</ol>')
+                in_ol = False
+            if not in_ul:
+                blocks.append('<ul>')
+                in_ul = True
+            blocks.append(f"<li>{_inline_markdown(stripped[2:])}</li>")
+            continue
+
+        close_lists()
+        blocks.append(f"<p>{_inline_markdown(stripped)}</p>")
+
+    close_lists()
+    return '\n'.join(blocks)
+
+
+def article_public_url(article_obj: Article) -> str:
+    if article_obj.title.strip().lower() == 'about-us':
+        return url_for('about')
+    return url_for('article', article_title=article_obj.title)
+
+
+def can_edit_article(article_obj: Article) -> bool:
+    if not current_user.is_authenticated:
+        return False
+    if current_user.role in ['admin', 'writer']:
+        return True
+    return False
+
+
+def parse_infobox_data(raw_data: str):
+    rows = []
+    for raw_line in (raw_data or '').splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if ':' in line:
+            label, value = line.split(':', 1)
+            rows.append((label.strip(), value.strip()))
+        else:
+            rows.append((line, ''))
+    return rows
+
+
+def render_article_page(article_obj: Article):
+    rendered_content = render_simple_markdown(article_obj.content)
+    infobox_rows = parse_infobox_data(article_obj.infobox_data)
+    if not infobox_rows:
+        infobox_rows = [
+            ('Author', article_obj.author or 'Unknown'),
+            ('Created', article_obj.created_at.strftime('%Y-%m-%d') if article_obj.created_at else 'Unknown'),
+            ('Status', article_obj.status),
+        ]
+    return render_template(
+        'article.html',
+        article=article_obj,
+        random_article=None,
+        rendered_content=rendered_content,
+        infobox_rows=infobox_rows,
+        article_link=article_public_url(article_obj),
+        can_edit=can_edit_article(article_obj),
+    )
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -102,6 +233,34 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/about')
+def about():
+    about_article = Article.query.filter(
+        Article.title == 'About-Us',
+        Article.is_archived.is_(False),
+        func.lower(func.trim(Article.status)) == 'approved',
+    ).first()
+    if about_article:
+        return render_article_page(about_article)
+    flash('About article is not published yet.', 'info')
+    return redirect(url_for('index'))
+
+
+@app.route('/articles')
+def articles():
+    search = (request.args.get('q') or '').strip()
+    query = Article.query.filter(
+        Article.is_archived.is_(False),
+        func.lower(func.trim(Article.status)) == 'approved',
+    )
+    if search:
+        like = f'%{search}%'
+        query = query.filter((Article.title.ilike(like)) | (Article.summary.ilike(like)) | (Article.author.ilike(like)))
+    article_list = query.order_by(Article.created_at.desc()).all()
+    article_links = {article.id: article_public_url(article) for article in article_list}
+    return render_template('articles.html', articles=article_list, search=search, article_links=article_links)
+
+
 @app.route('/articles/new', methods=['GET', 'POST'])
 @login_required
 def create_article():
@@ -112,7 +271,7 @@ def create_article():
         existing = Article.query.filter_by(title=normalized_title).first()
         if existing:
             flash('Article with this title already exists.', 'danger')
-            return render_template('create_article.html', form=form)
+            return render_template('create_article.html', form=form, is_edit=False, article=None)
 
         parsed_tags = []
         if form.tags.data:
@@ -125,6 +284,7 @@ def create_article():
             author=current_user.username,
             summary=(form.summary.data or '').strip(),
             content=form.content.data.strip(),
+            infobox_data=(form.infobox_data.data or '').strip(),
             image_url=image_url,
             tags=parsed_tags,
             status='pending',
@@ -143,7 +303,48 @@ def create_article():
             db.session.rollback()
             flash('Could not create article. Check title uniqueness and field lengths.', 'danger')
 
-    return render_template('create_article.html', form=form)
+    return render_template('create_article.html', form=form, is_edit=False, article=None)
+
+
+@app.route('/articles/<int:article_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_article(article_id):
+    article_obj = Article.query.get_or_404(article_id)
+    if not can_edit_article(article_obj):
+        abort(403)
+
+    form = ArticleForm(obj=article_obj)
+    if request.method == 'GET':
+        form.tags.data = ', '.join(article_obj.tags or [])
+        form.infobox_data.data = article_obj.infobox_data or ''
+
+    if form.validate_on_submit():
+        normalized_title = form.title.data.strip()
+        duplicate = Article.query.filter(
+            Article.title == normalized_title,
+            Article.id != article_obj.id,
+        ).first()
+        if duplicate:
+            flash('Article with this title already exists.', 'danger')
+            return render_template('create_article.html', form=form, is_edit=True, article=article_obj)
+
+        article_obj.title = normalized_title
+        article_obj.summary = (form.summary.data or '').strip()
+        article_obj.content = form.content.data.strip()
+        article_obj.infobox_data = (form.infobox_data.data or '').strip()
+        article_obj.image_url = (form.image_url.data or '').strip() or 'default.png'
+        article_obj.tags = [t.strip() for t in (form.tags.data or '').split(',') if t.strip()]
+
+        if current_user.role != 'admin':
+            article_obj.status = 'pending'
+            article_obj.approved_by = None
+            article_obj.approved_at = None
+
+        db.session.commit()
+        flash('Article updated successfully.', 'success')
+        return redirect(article_public_url(article_obj))
+
+    return render_template('create_article.html', form=form, is_edit=True, article=article_obj)
 
 
 @app.route('/dashboard')
@@ -321,5 +522,7 @@ def toggle_archive_article(article_id):
 
 @app.route('/article/<article_title>')
 def article(article_title):
+    if article_title.strip().lower() == 'about-us':
+        return redirect(url_for('about'))
     article_obj = Article.query.filter_by(title=article_title, is_archived=False).first_or_404()
-    return render_template('article.html', article=article_obj, random_article=None)
+    return render_article_page(article_obj)

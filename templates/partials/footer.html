@@ -5,6 +5,8 @@
             <p class="mb-0">Community knowledge base for maps, weapons, enemies, and lore.</p>
             <div class="footer-links">
                 <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('articles') }}">Articles</a>
+                <a href="{{ url_for('about') }}">About</a>
                 <a href="{{ url_for('create_article') }}">Create Article</a>
                 {% if current_user.is_authenticated and current_user.role == 'admin' %}
                 <a href="{{ url_for('dashboard_users') }}">Admin Dashboard</a>

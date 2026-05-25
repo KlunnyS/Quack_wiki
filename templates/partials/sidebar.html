@@ -2,17 +2,19 @@
     {% if current_user.is_authenticated and current_user.role in ['admin', 'writer'] and request.endpoint in ['dashboard_users', 'dashboard_articles'] %}
     <h6 class="sidebar-title">Dashboard</h6>
     {% if current_user.role == 'admin' %}
-    <a href="{{ url_for('dashboard_users') }}">Users</a>
+    <a href="{{ url_for('dashboard_users') }}"><i class="bi bi-people-fill sidebar-icon"></i>Users</a>
     {% endif %}
-    <a href="{{ url_for('dashboard_articles') }}">Articles</a>
-    <a href="{{ url_for('create_article') }}">Create Article</a>
+    <a href="{{ url_for('dashboard_articles') }}"><i class="bi bi-journal-text sidebar-icon"></i>Articles</a>
+    <a href="{{ url_for('create_article') }}"><i class="bi bi-plus-square sidebar-icon"></i>Create Article</a>
     {% else %}
     <h6 class="sidebar-title">Explore</h6>
-    <a href="{{ url_for('index') }}">Overview</a>
-    <a href="{{ url_for('index') }}">Levels</a>
-    <a href="{{ url_for('index') }}">Weapons</a>
-    <a href="{{ url_for('index') }}">Enemies</a>
-    <a href="{{ url_for('index') }}">Lore</a>
-    <a href="{{ url_for('index') }}">Development</a>
+    <a href="{{ url_for('index') }}"><i class="bi bi-house-door sidebar-icon"></i>Overview</a>
+    <a href="{{ url_for('articles') }}"><i class="bi bi-journal-richtext sidebar-icon"></i>Articles</a>
+    <a href="{{ url_for('about') }}"><i class="bi bi-info-circle sidebar-icon"></i>About</a>
+    <a href="{{ url_for('index') }}"><i class="bi bi-map sidebar-icon"></i>Levels</a>
+    <a href="{{ url_for('index') }}"><i class="bi bi-bullseye sidebar-icon"></i>Weapons</a>
+    <a href="{{ url_for('index') }}"><i class="bi bi-shield-x sidebar-icon"></i>Enemies</a>
+    <a href="{{ url_for('index') }}"><i class="bi bi-book sidebar-icon"></i>Lore</a>
+    <a href="{{ url_for('index') }}"><i class="bi bi-tools sidebar-icon"></i>Development</a>
     {% endif %}
 </nav>

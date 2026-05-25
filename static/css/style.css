@@ -11,8 +11,11 @@
     --radius: 18px;
     --shadow: 0 18px 45px rgba(0, 0, 0, 0.3);
     --nav-height: 72px;
-    --sidebar-width: 280px;
+    --sidebar-width: 330px;
     --footer-height: 124px;
+    --layout-top-pad: 5.6rem;
+    --layout-side-pad: 1.2rem;
+    --sidebar-top-offset: 1rem;
 }
 
 * {
@@ -158,25 +161,25 @@ a {
 }
 
 .layout-shell {
-    padding: 5.6rem 1.2rem 1.2rem;
+    padding: var(--layout-top-pad) var(--layout-side-pad) 1.2rem;
     flex: 1 0 auto;
 }
 
 .wiki-sidebar-detached {
     position: fixed;
-    top: var(--nav-height);
-    left: 0;
+    top: calc(var(--layout-top-pad) + var(--sidebar-top-offset));
+    left: var(--layout-side-pad);
     width: var(--sidebar-width);
-    height: calc(100vh - var(--nav-height) - var(--footer-height));
-    padding: 1rem 0.8rem 1rem 1rem;
+    height: calc(100vh - var(--layout-top-pad) - var(--sidebar-top-offset) - var(--footer-height));
+    padding: 0.6rem 0.5rem 0.6rem 0;
     z-index: 30;
 }
 
 .wiki-sidebar {
     width: 100%;
-    height: 100%;
+    max-height: calc(100vh - var(--nav-height) - var(--footer-height) - 6.5rem);
     overflow-y: auto;
-    padding: 1rem;
+    padding: 0.65rem 0.7rem;
     border-radius: var(--radius);
     border: 1px solid var(--panel-border);
     background: var(--panel);
@@ -187,14 +190,17 @@ a {
     color: var(--text-dim);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin-bottom: 0.7rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.78rem;
 }
 
 .wiki-sidebar a {
     display: block;
-    padding: 0.5rem 0.4rem;
+    padding: 0.42rem 0.5rem;
+    font-size: 0.93rem;
+    line-height: 1.2;
     color: #d6e0fa;
-    border-radius: 10px;
+    border-radius: 8px;
     transition: background-color 0.2s ease;
 }
 
@@ -202,12 +208,125 @@ a {
     background: rgba(255, 255, 255, 0.08);
 }
 
+.sidebar-icon {
+    display: inline-block;
+    width: 1.1rem;
+    margin-right: 0.5rem;
+    text-align: center;
+    opacity: 0.9;
+}
+
 .page-content {
     padding: 0.25rem 0.7rem;
 }
 
 .page-content-with-sidebar {
-    margin-left: calc(var(--sidebar-width) + 0.6rem);
+    margin-left: calc(var(--sidebar-width) + 0.25rem);
+}
+
+.layout-footer-spacer {
+    height: var(--footer-height);
+    width: 100%;
+}
+
+.article-wiki {
+    max-width: 1220px;
+}
+
+.article-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    padding-bottom: 0.65rem;
+}
+
+.article-title {
+    margin-bottom: 0.2rem;
+}
+
+.article-lead {
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: #e8efff;
+    margin-bottom: 1.3rem;
+}
+
+.article-body {
+    color: #e5ecff;
+    line-height: 1.68;
+    font-size: 1.12rem;
+}
+
+.article-body h1,
+.article-body h2,
+.article-body h3 {
+    color: #ffffff;
+    margin-top: 1.6rem;
+    margin-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding-bottom: 0.35rem;
+}
+
+.article-body h1 {
+    font-size: 2rem;
+}
+
+.article-body h2 {
+    font-size: 1.65rem;
+}
+
+.article-body h3 {
+    font-size: 1.35rem;
+}
+
+.article-body p {
+    margin-bottom: 1rem;
+}
+
+.article-body ul,
+.article-body ol {
+    margin-bottom: 1rem;
+    padding-left: 1.4rem;
+}
+
+.article-body code {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f6c98f;
+    border-radius: 6px;
+    padding: 0.08rem 0.3rem;
+}
+
+.article-body blockquote {
+    border-left: 3px solid rgba(130, 170, 255, 0.5);
+    padding: 0.2rem 0 0.2rem 0.8rem;
+    color: #cdd8fa;
+    margin: 0 0 1rem;
+}
+
+.article-body a {
+    color: #9ec7ff;
+}
+
+.article-infobox {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 0.85rem;
+}
+
+.infobox-title {
+    text-align: center;
+    margin-bottom: 0.7rem;
+}
+
+.infobox-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.35rem 0.6rem;
+    font-size: 0.95rem;
+}
+
+.infobox-label {
+    color: #b8c7ee;
+    font-weight: 600;
 }
 
 .hero {

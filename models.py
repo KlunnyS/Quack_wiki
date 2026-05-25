@@ -32,6 +32,7 @@ class Article(db.Model):
     image_url = db.Column(db.String(120), default='default.png')
     summary = db.Column(db.Text)
     content = db.Column(db.Text, nullable=False)
+    infobox_data = db.Column(db.Text, nullable=True)
     tags = db.Column(db.JSON, default=list)
     status = db.Column(db.String(20), default='pending', nullable=False)
     approved_by = db.Column(db.String(120), nullable=True)
