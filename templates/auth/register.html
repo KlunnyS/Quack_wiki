@@ -1,0 +1,61 @@
+{% extends "_base.html" %}
+
+{% block title %}Register - Quack Wiki{% endblock %}
+
+{% block content %}
+<main class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-body">
+                    <h3 class="card-title text-center text-danger mb-4">Register</h3>
+
+                    <form method="POST" action="{{ url_for('register') }}">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {{ form.username(class="form-control bg-dark text-light border-secondary", placeholder="Choose username") }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small">{{ form.username.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control bg-dark text-light border-secondary", placeholder="Enter email") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small">{{ form.email.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control bg-dark text-light border-secondary", placeholder="Enter password") }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small">{{ form.password.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.confirm_password.label(class="form-label") }}
+                            {{ form.confirm_password(class="form-control bg-dark text-light border-secondary", placeholder="Confirm password") }}
+                            {% if form.confirm_password.errors %}
+                                <div class="text-danger small">{{ form.confirm_password.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-danger btn-lg") }}
+                        </div>
+
+                        <p class="text-center mt-3">
+                            Already have an account? <a href="{{ url_for('login') }}">Login</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

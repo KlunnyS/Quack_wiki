@@ -1,0 +1,136 @@
+body {
+    background-color: #0a0a0a;
+    color: #e5e5e5;
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* RED THEME */
+:root {
+    --primary-red: #b91c1c;
+    --dark-red: #7f1d1d;
+    --accent-red: #ef4444;
+}
+
+.navbar {
+    background: linear-gradient(90deg, #000000, var(--dark-red));
+}
+
+.hero {
+    background: linear-gradient(135deg, #1a0000, #000000);
+    border: 1px solid var(--primary-red);
+    border-radius: 1rem;
+    padding: 3rem;
+    box-shadow: 0 0 25px rgba(255, 0, 0, 0.2);
+}
+
+.card {
+    background-color: #111;
+    border: 1px solid #222;
+    transition: all 0.2s ease;
+     color: #e5e5e5;
+}
+
+
+.card p {
+    color: gainsboro;
+    /* slightly dimmed but readable */
+}
+
+.card a {
+    color: #f87171;
+    /* red accent for links */
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-red);
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+}
+
+.btn-primary {
+    background-color: var(--primary-red);
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-red);
+}
+
+.btn-outline-light:hover {
+    background-color: var(--primary-red);
+    border-color: var(--primary-red);
+}
+
+.sidebar {
+    background-color: #0d0d0d;
+    border-right: 1px solid #222;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.sidebar a {
+    display: block;
+    padding: 0.4rem 0;
+    color: #ccc;
+}
+
+.sidebar a:hover {
+    color: var(--accent-red);
+}
+
+footer {
+    margin-top: 3rem;
+    padding: 2rem 0;
+    border-top: 1px solid #222;
+    text-align: center;
+    color: #777;
+}
+
+a {
+    text-decoration: none;
+}
+
+.alert {
+    color: #f8fafc;
+    /* light text */
+    background-color: #1a0000;
+    /* dark red background */
+    border: 1px solid #b91c1c;
+}
+
+.alert-success {
+    background-color: #064e3b;
+    border-color: #10b981;
+    color: #d1fae5;
+}
+
+.alert-danger {
+    background-color: #450a0a;
+    border-color: #ef4444;
+    color: #fee2e2;
+}
+
+.alert-warning {
+    background-color: #78350f;
+    border-color: #f59e0b;
+    color: #fef3c7;
+}
+
+.alert-info {
+    background-color: #0c4a6e;
+    border-color: #38bdf8;
+    color: #e0f2fe;
+}
+
+.flash-container {
+    position: fixed;
+    top: 80px; /* below navbar */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    width: 70%;
+}
+
+.flash-alert {
+    margin-bottom: 10px;
+}
