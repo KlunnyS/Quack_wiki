@@ -1,0 +1,114 @@
+{% extends "_base.html" %}
+
+{% block title %}Dashboard Articles - Quack Wiki{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <section id="articles-section" class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Articles</h4>
+            <span class="text-muted">Total: {{ articles|length }}</span>
+        </div>
+        <form method="GET" action="{{ url_for('dashboard_articles') }}" class="row g-2 mb-3" id="articlesFilterForm">
+            <div class="col-md-4">
+                <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search title or author" id="articlesSearch">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status" onchange="this.form.submit()">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="declined" {% if status_filter == 'declined' %}selected{% endif %}>Declined</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="sort" onchange="this.form.submit()">
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Sort: Newest</option>
+                    <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Sort: Oldest</option>
+                    <option value="title_az" {% if sort == 'title_az' %}selected{% endif %}>Title A-Z</option>
+                    <option value="title_za" {% if sort == 'title_za' %}selected{% endif %}>Title Z-A</option>
+                    <option value="status_az" {% if sort == 'status_az' %}selected{% endif %}>Status A-Z</option>
+                    <option value="status_za" {% if sort == 'status_za' %}selected{% endif %}>Status Z-A</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" value="1" id="showArchivedArticles" name="show_archived" onchange="this.form.submit()" {% if show_archived %}checked{% endif %}>
+                    <label class="form-check-label" for="showArchivedArticles">Show Archived</label>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Reviewed By</th>
+                        <th>Reviewed At</th>
+                        <th>Archived</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr>
+                        <td>{{ article.id }}</td>
+                        <td><a href="{{ url_for('article', article_title=article.title) }}">{{ article.title }}</a></td>
+                        <td>{{ article.author }}</td>
+                        <td>
+                            {% if article.status == 'approved' %}
+                            <span class="badge bg-success">approved</span>
+                            {% elif article.status == 'declined' %}
+                            <span class="badge bg-danger">declined</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">pending</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ article.created_at.strftime('%Y-%m-%d') if article.created_at else '-' }}</td>
+                        <td>{{ article.approved_by or '-' }}</td>
+                        <td>{{ article.approved_at.strftime('%Y-%m-%d %H:%M') if article.approved_at else '-' }}</td>
+                        <td>
+                            {% if article.is_archived %}
+                            <span class="badge bg-secondary">archived</span>
+                            {% else %}
+                            <span class="badge bg-success">active</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-flex gap-2 flex-wrap">
+                            <form method="POST" action="{{ url_for('approve', article_id=article.id) }}">
+                                <button type="submit" class="btn btn-success btn-sm" {% if article.status == 'approved' or article.is_archived %}disabled{% endif %}>Approve</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('decline', article_id=article.id) }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" {% if article.status == 'declined' or article.is_archived %}disabled{% endif %}>Decline</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('toggle_archive_article', article_id=article.id) }}">
+                                <button type="submit" class="btn btn-outline-warning btn-sm">{% if article.is_archived %}Restore{% else %}Archive{% endif %}</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script>
+(() => {
+    const search = document.getElementById('articlesSearch');
+    const form = document.getElementById('articlesFilterForm');
+    let t;
+    if (search && form) {
+        search.addEventListener('input', () => {
+            clearTimeout(t);
+            t = setTimeout(() => form.submit(), 300);
+        });
+    }
+})();
+</script>
+{% endblock %}

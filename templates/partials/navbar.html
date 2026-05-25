@@ -1,76 +1,48 @@
-<nav class="navbar navbar-expand-lg navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold text-danger" href="{{url_for('index')}}">QUACK</a>
+﻿<nav class="navbar navbar-expand-lg main-nav">
+    <div class="container-fluid nav-wrap">
+        <a class="navbar-brand brand-mark" href="{{ url_for('index') }}">QUACK</a>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="{{url_for('index')}}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{url_for('article',article_title = 'About-Us')}}">About Us</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{url_for('index')}}">Add an article</a></li>
-                {% if current_user.role == "admin" %}
-                <li class="nav-item"><a class="nav-link" href="{{url_for('dashboard')}}">Dashboard</a></li>
+            <ul class="navbar-nav me-auto nav-links">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('create_article') }}">New Article</a></li>
+                {% if current_user.is_authenticated and current_user.role == "admin" %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard_users') }}">Dashboard</a></li>
                 {% endif %}
             </ul>
 
-            <!-- Right side (auth) -->
-            <ul class="navbar-nav ms-auto align-items-center">
-
-
-
-                <!-- Search -->
-                <li class="nav-item ms-3 mt-3">
-                    <form class="d-flex" method="GET" action="/search">
-                        <input class="form-control form-control-sm me-2 bg-dark text-light border-secondary"
-                            type="search" name="q" placeholder="Search...">
-                        <button class="btn btn-danger btn-sm" type="submit">Search</button>
+            <ul class="navbar-nav ms-auto align-items-lg-center nav-tools">
+                <li class="nav-item nav-search-wrap">
+                    <form class="nav-search" method="GET" action="{{ url_for('index') }}">
+                        <input class="form-control" type="search" name="q" placeholder="Search wiki">
+                        <button class="btn btn-brand" type="submit">Search</button>
                     </form>
                 </li>
 
                 {% if current_user.is_authenticated %}
-
-                <!-- Profile dropdown -->
-                <li class="nav-item dropdown ms-3">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button"
-                        data-bs-toggle="dropdown">
-                        <span class="me-2">👤</span>
-                        {{ current_user.username }}
+                <li class="nav-item dropdown ms-lg-3">
+                    <a class="profile-trigger" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="profile-avatar">{{ current_user.username[0]|upper }}</span>
+                        <span class="profile-name">{{ current_user.username }}</span>
                     </a>
-
-                    <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary">
-                        <li>
-                            <a class="dropdown-item text-light" href="{{url_for('index')}}">Profile</a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item text-light" href="{{url_for('index')}}">Settings</a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item text-light" href="{{url_for('index')}}">My Pages</a>
-                        </li>
-                        <li>
-                            <hr class="dropdown-divider border-secondary">
-                        </li>
-                        <li>
-                            <a class="dropdown-item text-danger" href="{{url_for('logout')}}">Logout</a>
-                        </li>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('index') }}">Profile</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('index') }}">Settings</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('index') }}">My Pages</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">Logout</a></li>
                     </ul>
                 </li>
-
                 {% else %}
-
-                <!-- Login / Register buttons -->
-                <li class="nav-item me-2 ms-3">
-                    <a class="btn btn-outline-light btn-sm" href="{{url_for('login')}}">Login</a>
+                <li class="nav-item ms-lg-3">
+                    <a class="btn btn-outline-light nav-login-btn" href="{{ url_for('login') }}">Login</a>
                 </li>
-                <!-- <li class="nav-item">
-                    <a class="btn btn-danger btn-sm" href="{{url_for('register')}}">Register</a>
-                </li> -->
-
                 {% endif %}
-
             </ul>
         </div>
     </div>

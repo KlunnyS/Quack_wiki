@@ -1,0 +1,132 @@
+{% extends "_base.html" %}
+
+{% block title %}Dashboard Users - Quack Wiki{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <section id="users-section" class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Users</h4>
+            <span class="text-muted">Total: {{ users|length }}</span>
+        </div>
+        <form method="GET" action="{{ url_for('dashboard_users') }}" class="row g-2 mb-3" id="usersFilterForm">
+            <div class="col-md-4">
+                <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search username or email" id="usersSearch">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="role" onchange="this.form.submit()">
+                    <option value="all" {% if role_filter == 'all' %}selected{% endif %}>All Roles</option>
+                    <option value="user" {% if role_filter == 'user' %}selected{% endif %}>User</option>
+                    <option value="writer" {% if role_filter == 'writer' %}selected{% endif %}>Writer</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="sort" onchange="this.form.submit()">
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Sort: Newest</option>
+                    <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Sort: Oldest</option>
+                    <option value="username_az" {% if sort == 'username_az' %}selected{% endif %}>Username A-Z</option>
+                    <option value="username_za" {% if sort == 'username_za' %}selected{% endif %}>Username Z-A</option>
+                    <option value="role_az" {% if sort == 'role_az' %}selected{% endif %}>Role A-Z</option>
+                    <option value="role_za" {% if sort == 'role_za' %}selected{% endif %}>Role Z-A</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" value="1" id="showArchivedUsers" name="show_archived" onchange="this.form.submit()" {% if show_archived %}checked{% endif %}>
+                    <label class="form-check-label" for="showArchivedUsers">Show Deactivated</label>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th>Archived</th>
+                        <th>Role Action</th>
+                        <th>Deactivate Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}{% if user.username == "MainAdmin" %} <span class="badge bg-warning text-dark">Main</span>{% endif %}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.role == "admin" %}
+                            <span class="badge bg-danger">admin</span>
+                            {% elif user.role == "writer" %}
+                            <span class="badge bg-success">writer</span>
+                            {% else %}
+                            <span class="badge bg-secondary">user</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</td>
+                        <td>
+                            {% if user.is_archived %}
+                            <span class="badge bg-secondary">deactivated</span>
+                            {% else %}
+                            <span class="badge bg-success">active</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_archived %}
+                                <span class="text-muted small">Deactivated user</span>
+                            {% elif user.username == "MainAdmin" %}
+                                <span class="text-muted small">Protected account</span>
+                            {% elif user.id == current_user.id %}
+                                <span class="text-muted small">Self-change blocked</span>
+                            {% elif user.role == "admin" and current_user.username != "MainAdmin" %}
+                                <span class="text-muted small">Only MainAdmin can modify admins</span>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('set_role', user_id=user.id) }}" class="d-flex gap-2">
+                                {{ role_form.hidden_tag() }}
+                                {{ role_form.role(class="form-select form-select-sm") }}
+                                {{ role_form.submit(class="btn btn-brand btn-sm") }}
+                            </form>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.username == "MainAdmin" %}
+                                <span class="text-muted small">Protected account</span>
+                            {% elif user.id == current_user.id %}
+                                <span class="text-muted small">Self-deactivate blocked</span>
+                            {% elif user.role == "admin" and current_user.username != "MainAdmin" %}
+                                <span class="text-muted small">Only MainAdmin can deactivate admins</span>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('toggle_archive_user', user_id=user.id) }}">
+                                <button type="submit" class="btn btn-outline-warning btn-sm">
+                                    {% if user.is_archived %}Reactivate{% else %}Deactivate{% endif %}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script>
+(() => {
+    const search = document.getElementById('usersSearch');
+    const form = document.getElementById('usersFilterForm');
+    let t;
+    if (search && form) {
+        search.addEventListener('input', () => {
+            clearTimeout(t);
+            t = setTimeout(() => form.submit(), 300);
+        });
+    }
+})();
+</script>
+{% endblock %}

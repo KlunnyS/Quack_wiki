@@ -25,4 +25,9 @@ class RoleForm(FlaskForm):
     submit = SubmitField("Change")
 
 class ArticleForm(FlaskForm):
-    pass
+    title = StringField("Title", validators=[DataRequired(), Length(min=3, max=120)])
+    summary = TextAreaField("Summary", validators=[Length(max=1000)])
+    content = TextAreaField("Content", validators=[DataRequired()])
+    image_url = StringField("Image URL", validators=[Length(max=255)])
+    tags = StringField("Tags (comma separated)")
+    submit = SubmitField("Create Article")
