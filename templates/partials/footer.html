@@ -1,0 +1,18 @@
+<footer class="site-footer">
+    <div class="container-fluid">
+        <div class="footer-content">
+            <p class="mb-1">&copy; 2026 Quack Wiki</p>
+            <p class="mb-0">Community knowledge base for maps, weapons, enemies, and lore.</p>
+            <div class="footer-links">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('create_article') }}">Create Article</a>
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                <a href="{{ url_for('dashboard_users') }}">Admin Dashboard</a>
+                {% elif current_user.is_authenticated and current_user.role == 'writer' %}
+                <a href="{{ url_for('dashboard_articles') }}">Articles Dashboard</a>
+                {% endif %}
+                <a href="{{ url_for('login') }}">Login</a>
+            </div>
+        </div>
+    </div>
+</footer>

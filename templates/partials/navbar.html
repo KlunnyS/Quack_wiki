@@ -13,6 +13,8 @@
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('create_article') }}">New Article</a></li>
                 {% if current_user.is_authenticated and current_user.role == "admin" %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard_users') }}">Dashboard</a></li>
+                {% elif current_user.is_authenticated and current_user.role == "writer" %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard_articles') }}">Articles</a></li>
                 {% endif %}
             </ul>
 

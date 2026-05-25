@@ -192,7 +192,7 @@ def dashboard_users():
 
 
 @app.route('/dashboard/articles')
-@role_required(['admin'])
+@role_required(['admin', 'writer'])
 def dashboard_articles():
     search = (request.args.get('q') or '').strip()
     status_filter = (request.args.get('status') or 'all').strip().lower()

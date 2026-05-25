@@ -26,20 +26,16 @@
     </div>
 
     <div class="layout-shell container-fluid">
-        <div class="row g-4">
-            <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
-                {% include "partials/sidebar.html" %}
-            </aside>
+        <aside class="wiki-sidebar-detached d-none d-lg-block">
+            {% include "partials/sidebar.html" %}
+        </aside>
 
-            <main class="col-12 col-lg-9 col-xl-10 page-content">
-                {% block content %}{% endblock %}
-            </main>
-        </div>
+        <main class="page-content page-content-with-sidebar">
+            {% block content %}{% endblock %}
+        </main>
     </div>
 
-    <footer class="site-footer">
-        <p>&copy; 2026 Quack Wiki | Built with Flask</p>
-    </footer>
+    {% include "partials/footer.html" %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>

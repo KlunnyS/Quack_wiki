@@ -51,7 +51,9 @@
                         <th>Reviewed By</th>
                         <th>Reviewed At</th>
                         <th>Archived</th>
+                        {% if current_user.role == 'admin' %}
                         <th>Actions</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -79,6 +81,7 @@
                             <span class="badge bg-success">active</span>
                             {% endif %}
                         </td>
+                        {% if current_user.role == 'admin' %}
                         <td class="d-flex gap-2 flex-wrap">
                             <form method="POST" action="{{ url_for('approve', article_id=article.id) }}">
                                 <button type="submit" class="btn btn-success btn-sm" {% if article.status == 'approved' or article.is_archived %}disabled{% endif %}>Approve</button>
@@ -90,6 +93,7 @@
                                 <button type="submit" class="btn btn-outline-warning btn-sm">{% if article.is_archived %}Restore{% else %}Archive{% endif %}</button>
                             </form>
                         </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
