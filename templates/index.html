@@ -1,4 +1,5 @@
-﻿{% extends "_base.html" %}
+{% extends "_base.html" %}
+{% from "partials/tag_link.html" import tag_article_link %}
 
 {% block title %}Home - Quack Wiki{% endblock %}
 
@@ -8,8 +9,8 @@
     <h1>QUACK</h1>
     <p class="hero-subtitle">Fast. Brutal. Puzzle Shooter.</p>
     <div class="hero-actions">
-        <a href="/play" class="btn btn-brand btn-lg">Play Game</a>
-        <a href="{{ url_for('articles') }}" class="btn btn-outline-light btn-lg">Explore Wiki</a>
+        <a href="{{ url_for('articles') }}" class="btn btn-brand btn-lg">Explore Wiki</a>
+        <a href="{{ url_for('create_article') }}" class="btn btn-outline-light btn-lg">New Article</a>
     </div>
 </section>
 
@@ -25,35 +26,35 @@
         <article class="card h-100 p-4 info-card">
             <h5>Levels</h5>
             <p>Puzzle maps, secrets, and progression.</p>
-            <a href="/levels" class="btn btn-outline-light btn-sm">Explore</a>
+            {{ tag_article_link('levels', 'Explore', class_name='btn btn-outline-light btn-sm') }}
         </article>
     </div>
     <div class="col-md-6 col-xl-4">
         <article class="card h-100 p-4 info-card">
             <h5>Weapons</h5>
             <p>Arsenal and puzzle interactions.</p>
-            <a href="/weapons" class="btn btn-outline-light btn-sm">Browse</a>
+            {{ tag_article_link('weapons', 'Browse', class_name='btn btn-outline-light btn-sm') }}
         </article>
     </div>
     <div class="col-md-6 col-xl-4">
         <article class="card h-100 p-4 info-card">
             <h5>Enemies</h5>
             <p>AI behavior and combat strategies.</p>
-            <a href="/enemies" class="btn btn-outline-light btn-sm">View</a>
+            {{ tag_article_link('enemies', 'View', class_name='btn btn-outline-light btn-sm') }}
         </article>
     </div>
     <div class="col-md-6 col-xl-4">
         <article class="card h-100 p-4 info-card">
             <h5>Lore</h5>
             <p>The world and story behind Quack.</p>
-            <a href="/lore" class="btn btn-outline-light btn-sm">Read</a>
+            {{ tag_article_link('lore', 'Read', class_name='btn btn-outline-light btn-sm') }}
         </article>
     </div>
     <div class="col-md-6 col-xl-4">
         <article class="card h-100 p-4 info-card">
             <h5>Development</h5>
             <p>Technical details, changelogs, and updates.</p>
-            <a href="/dev" class="btn btn-outline-light btn-sm">Details</a>
+            {{ tag_article_link('development', 'Details', class_name='btn btn-outline-light btn-sm') }}
         </article>
     </div>
 </section>

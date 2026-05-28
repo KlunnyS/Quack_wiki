@@ -193,7 +193,7 @@ def can_edit_article(article_obj: Article) -> bool:
         return False
     if current_user.role in ['admin', 'writer']:
         return True
-    return False
+    return article_obj.author == current_user.username
 
 
 def parse_infobox_data(raw_data: str):
@@ -417,9 +417,11 @@ def edit_article(article_id):
             article_obj.status = 'pending'
             article_obj.approved_by = None
             article_obj.approved_at = None
+            flash('Article updated and sent for approval.', 'info')
+        else:
+            flash('Article updated successfully.', 'success')
 
         db.session.commit()
-        flash('Article updated successfully.', 'success')
         return redirect(article_public_url(article_obj))
 
     return render_template('create_article.html', form=form, is_edit=True, article=article_obj)

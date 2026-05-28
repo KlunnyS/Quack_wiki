@@ -1,4 +1,3 @@
-{% from "partials/tag_link.html" import tag_article_link %}
 
 <nav class="wiki-sidebar">
     {% if current_user.is_authenticated and current_user.role in ['admin', 'writer'] and request.endpoint in ['dashboard_users', 'dashboard_articles'] %}

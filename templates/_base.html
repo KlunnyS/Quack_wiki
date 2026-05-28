@@ -11,6 +11,7 @@
     {% block head %}{% endblock %}
 </head>
 <body>
+    {% from "partials/tag_link.html" import tag_article_link %}
     {% include "partials/navbar.html" %}
 
     <div class="flash-container">
