@@ -50,13 +50,15 @@
         <aside class="col-xl-4">
             <section class="article-infobox">
                 <h5 class="infobox-title">{{ article.title }}</h5>
-                {% if article.image_url and article.image_url.startswith('http') %}
-                <img src="{{ article.image_url }}" class="img-fluid rounded mb-2" alt="{{ article.title }} image">
-                {% elif article.image_url %}
-                <img src="{{ url_for('static', filename='img/' ~ article.image_url) }}" class="img-fluid rounded mb-2" alt="{{ article.title }} image">
-                {% else %}
-                <div class="image-placeholder mb-2">No image</div>
-                {% endif %}
+                <div class="infobox-image-wrap">
+                    {% if article.image_url and article.image_url.startswith('http') %}
+                    <img src="{{ article.image_url }}" class="infobox-image rounded" alt="{{ article.title }} image">
+                    {% elif article.image_url %}
+                    <img src="{{ url_for('static', filename='img/' ~ article.image_url) }}" class="infobox-image rounded" alt="{{ article.title }} image">
+                    {% else %}
+                    <div class="image-placeholder mb-2">No image</div>
+                    {% endif %}
+                </div>
                 <div class="infobox-grid">
                     {% for label, value in infobox_rows %}
                     <div class="infobox-label">{{ label }}</div>

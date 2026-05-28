@@ -130,9 +130,13 @@ def render_simple_markdown(raw_text: str) -> str:
 
 
 def article_public_url(article_obj: Article) -> str:
-    if article_has_tag(article_obj, 'about-us'):
+    if article_has_tag(article_obj, static_page_tag('about-us')):
         return url_for('about')
     return url_for('article', article_title=article_obj.title)
+
+
+def static_page_tag(page_key: str) -> str:
+    return f"page:{page_key.strip().lower()}"
 
 
 def article_has_tag(article_obj: Article, tag_name: str) -> bool:
@@ -140,15 +144,48 @@ def article_has_tag(article_obj: Article, tag_name: str) -> bool:
     return any(str(tag).strip().lower() == wanted for tag in (article_obj.tags or []))
 
 
+def article_matches_search(article_obj: Article, search: str) -> bool:
+    needle = search.strip().lower()
+    if not needle:
+        return True
+
+    fields = [
+        article_obj.title or '',
+        article_obj.summary or '',
+        article_obj.author or '',
+    ]
+    tags = [str(tag) for tag in (article_obj.tags or [])]
+    return any(needle in value.lower() for value in fields + tags)
+
+
 def find_published_article_by_tag(tag_name: str):
+    page_tag = static_page_tag(tag_name)
     candidates = Article.query.filter(
         Article.is_archived.is_(False),
         func.lower(func.trim(Article.status)) == 'approved',
     ).order_by(Article.created_at.desc()).all()
     return next(
-        (article_obj for article_obj in candidates if article_has_tag(article_obj, tag_name)),
+        (article_obj for article_obj in candidates if article_has_tag(article_obj, page_tag)),
         None,
     )
+
+
+def normalize_article_tags(raw_tags: str):
+    tags = []
+    removed_reserved = False
+    can_use_reserved = current_user.is_authenticated and current_user.role in ['admin', 'writer']
+
+    for raw_tag in (raw_tags or '').split(','):
+        tag = raw_tag.strip().lower()
+        if not tag:
+            continue
+        if tag.startswith('page:') and not can_use_reserved:
+            removed_reserved = True
+            continue
+        if tag not in tags:
+            tags.append(tag)
+
+    return tags, removed_reserved
 
 
 def can_edit_article(article_obj: Article) -> bool:
@@ -290,10 +327,9 @@ def articles():
         Article.is_archived.is_(False),
         func.lower(func.trim(Article.status)) == 'approved',
     )
-    if search:
-        like = f'%{search}%'
-        query = query.filter((Article.title.ilike(like)) | (Article.summary.ilike(like)) | (Article.author.ilike(like)))
     article_list = query.order_by(Article.created_at.desc()).all()
+    if search:
+        article_list = [article_obj for article_obj in article_list if article_matches_search(article_obj, search)]
     article_links = {article.id: article_public_url(article) for article in article_list}
     return render_template('articles.html', articles=article_list, search=search, article_links=article_links)
 
@@ -310,9 +346,9 @@ def create_article():
             flash('Article with this title already exists.', 'danger')
             return render_template('create_article.html', form=form, is_edit=False, article=None)
 
-        parsed_tags = []
-        if form.tags.data:
-            parsed_tags = [t.strip() for t in form.tags.data.split(',') if t.strip()]
+        parsed_tags, removed_reserved = normalize_article_tags(form.tags.data)
+        if removed_reserved:
+            flash('Reserved page tags can only be used by writers and admins.', 'warning')
 
         image_path = save_article_image(form.image_file.data) or 'default.png'
 
@@ -372,7 +408,10 @@ def edit_article(article_id):
         uploaded_image = save_article_image(form.image_file.data)
         if uploaded_image:
             article_obj.image_url = uploaded_image
-        article_obj.tags = [t.strip() for t in (form.tags.data or '').split(',') if t.strip()]
+        parsed_tags, removed_reserved = normalize_article_tags(form.tags.data)
+        if removed_reserved:
+            flash('Reserved page tags can only be used by writers and admins.', 'warning')
+        article_obj.tags = parsed_tags
 
         if current_user.role != 'admin':
             article_obj.status = 'pending'
@@ -442,9 +481,6 @@ def dashboard_articles():
     query = Article.query
     if not show_archived:
         query = query.filter(Article.is_archived.is_(False))
-    if search:
-        like = f'%{search}%'
-        query = query.filter((Article.title.ilike(like)) | (Article.author.ilike(like)))
     if status_filter in {'pending', 'approved', 'declined'}:
         query = query.filter(Article.status == status_filter)
 
@@ -457,6 +493,8 @@ def dashboard_articles():
         'status_za': Article.status.desc(),
     }
     articles = query.order_by(sort_map.get(sort, Article.created_at.desc())).all()
+    if search:
+        articles = [article_obj for article_obj in articles if article_matches_search(article_obj, search)]
     article_links = {article_obj.id: article_public_url(article_obj) for article_obj in articles}
 
     return render_template(
@@ -564,6 +602,6 @@ def toggle_archive_article(article_id):
 @app.route('/article/<article_title>')
 def article(article_title):
     article_obj = Article.query.filter_by(title=article_title, is_archived=False).first_or_404()
-    if article_has_tag(article_obj, 'about-us'):
+    if article_has_tag(article_obj, static_page_tag('about-us')):
         return redirect(url_for('about'))
     return render_article_page(article_obj)

@@ -11,7 +11,7 @@
         </div>
         <form method="GET" action="{{ url_for('dashboard_articles') }}" class="row g-2 mb-3" id="articlesFilterForm">
             <div class="col-md-4">
-                <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search title or author" id="articlesSearch">
+                <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search title, author, summary, or tag" id="articlesSearch">
             </div>
             <div class="col-md-2">
                 <select class="form-select" name="status" onchange="this.form.submit()">

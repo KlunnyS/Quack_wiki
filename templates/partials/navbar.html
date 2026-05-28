@@ -23,8 +23,8 @@
 
             <ul class="navbar-nav ms-auto align-items-lg-center nav-tools">
                 <li class="nav-item nav-search-wrap">
-                    <form class="nav-search" method="GET" action="{{ url_for('index') }}">
-                        <input class="form-control" type="search" name="q" placeholder="Search wiki">
+                    <form class="nav-search" method="GET" action="{{ url_for('articles') }}">
+                        <input class="form-control" type="search" name="q" value="{{ request.args.get('q', '') if request.endpoint == 'articles' else '' }}" placeholder="Search wiki">
                         <button class="btn btn-brand" type="submit">Search</button>
                     </form>
                 </li>

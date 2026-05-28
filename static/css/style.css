@@ -317,6 +317,19 @@ a {
     margin-bottom: 0.7rem;
 }
 
+.infobox-image-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+}
+
+.infobox-image {
+    display: block;
+    max-width: min(100%, 260px);
+    max-height: 260px;
+    object-fit: contain;
+}
+
 .infobox-grid {
     display: grid;
     grid-template-columns: auto 1fr;

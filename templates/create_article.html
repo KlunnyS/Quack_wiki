@@ -8,8 +8,8 @@
         <div class="card p-4">
             <h2 class="mb-4">{% if is_edit %}Edit Article{% else %}Create Article{% endif %}</h2>
             <p class="text-muted mb-4">Fields marked with <span class="text-danger">*</span> are required.</p>
-            {% if is_edit and article and article.tags and 'about-us' in article.tags %}
-            <p class="text-muted mb-4">This database article powers the public About page because it has the about-us tag.</p>
+            {% if is_edit and article and article.tags and 'page:about-us' in article.tags %}
+            <p class="text-muted mb-4">This database article powers the public About page because it has the reserved page:about-us tag.</p>
             {% endif %}
 
             <form method="POST" enctype="multipart/form-data" action="{% if is_edit and article %}{{ url_for('edit_article', article_id=article.id) }}{% else %}{{ url_for('create_article') }}{% endif %}">
@@ -55,8 +55,8 @@
 
                 <div class="mb-4">
                     {{ form.tags.label(class="form-label") }}
-                    {{ form.tags(class="form-control", placeholder="about-us, guide, lore") }}
-                    <div class="form-text text-muted mt-1">Use the tag about-us to make this article power the public About page.</div>
+                    {{ form.tags(class="form-control", placeholder="guide, lore, page:about-us") }}
+                    <div class="form-text text-muted mt-1">Use normal tags for search. Writers/admins can use reserved page tags like page:about-us, page:levels, or page:weapons for static links.</div>
                 </div>
 
                 <div class="d-flex gap-2">
@@ -95,7 +95,7 @@
                     <p>Upload one image for the article infobox. Leaving it empty while editing keeps the current picture.</p>
 
                     <h6>About Page</h6>
-                    <p>Add <code>about-us</code> in Tags, approve the article, and the About nav link will render it.</p>
+                    <p>Writers/admins can add <code>page:about-us</code>, <code>page:levels</code>, or <code>page:weapons</code>. Static links only use these reserved tags.</p>
                 </div>
             </details>
         </aside>
