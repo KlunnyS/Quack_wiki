@@ -61,11 +61,7 @@
                     <tr>
                         <td>{{ article.id }}</td>
                         <td>
-                            {% if article.title|lower == 'about-us' %}
-                            <a href="{{ url_for('about') }}">{{ article.title }}</a>
-                            {% else %}
-                            <a href="{{ url_for('article', article_title=article.title) }}">{{ article.title }}</a>
-                            {% endif %}
+                            <a href="{{ article_links[article.id] }}">{{ article.title }}</a>
                         </td>
                         <td>{{ article.author }}</td>
                         <td>

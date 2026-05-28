@@ -6,7 +6,11 @@
 <div class="container-fluid px-0 article-wiki">
     <header class="article-header mb-3">
         <h1 class="article-title">{{ article.title or "Untitled" }}</h1>
-        <p class="article-meta mb-0">From Quack Wiki, the community knowledge base</p>
+        <p class="article-meta mb-0">
+            By {{ article.author or "Unknown" }}
+            {% if article.created_at %}| {{ article.created_at.strftime('%Y-%m-%d') }}{% endif %}
+            {% if article.status %}| {{ article.status|title }}{% endif %}
+        </p>
     </header>
 
     <div class="article-toolbar d-flex gap-2 mb-3 flex-wrap">
@@ -46,8 +50,10 @@
         <aside class="col-xl-4">
             <section class="article-infobox">
                 <h5 class="infobox-title">{{ article.title }}</h5>
-                {% if article.image_url %}
+                {% if article.image_url and article.image_url.startswith('http') %}
                 <img src="{{ article.image_url }}" class="img-fluid rounded mb-2" alt="{{ article.title }} image">
+                {% elif article.image_url %}
+                <img src="{{ url_for('static', filename='img/' ~ article.image_url) }}" class="img-fluid rounded mb-2" alt="{{ article.title }} image">
                 {% else %}
                 <div class="image-placeholder mb-2">No image</div>
                 {% endif %}

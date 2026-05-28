@@ -1,0 +1,5 @@
+{% macro tag_article_link(tag, label, icon='', class_name='') -%}
+<a href="{{ url_for('about') if tag == 'about-us' else url_for('tagged_article', tag=tag) }}"{% if class_name %} class="{{ class_name }}"{% endif %}>
+    {% if icon %}<i class="{{ icon }} sidebar-icon"></i>{% endif %}{{ label }}
+</a>
+{%- endmacro %}

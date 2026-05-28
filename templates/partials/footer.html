@@ -1,3 +1,5 @@
+{% from "partials/tag_link.html" import tag_article_link %}
+
 <footer class="site-footer">
     <div class="container-fluid">
         <div class="footer-content">
@@ -6,7 +8,7 @@
             <div class="footer-links">
                 <a href="{{ url_for('index') }}">Home</a>
                 <a href="{{ url_for('articles') }}">Articles</a>
-                <a href="{{ url_for('about') }}">About</a>
+                {{ tag_article_link('about-us', 'About') }}
                 <a href="{{ url_for('create_article') }}">Create Article</a>
                 {% if current_user.is_authenticated and current_user.role == 'admin' %}
                 <a href="{{ url_for('dashboard_users') }}">Admin Dashboard</a>

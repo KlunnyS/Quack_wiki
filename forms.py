@@ -29,6 +29,8 @@ class ArticleForm(FlaskForm):
     summary = TextAreaField("Summary", validators=[Length(max=1000)])
     content = TextAreaField("Content", validators=[DataRequired()])
     infobox_data = TextAreaField("Infobox Fields", validators=[Length(max=3000)])
-    image_url = StringField("Image URL", validators=[Length(max=255)])
+    image_file = FileField("Picture", validators=[
+        FileAllowed(["jpg", "jpeg", "png", "gif", "webp"], "Images only.")
+    ])
     tags = StringField("Tags (comma separated)")
     submit = SubmitField("Create Article")

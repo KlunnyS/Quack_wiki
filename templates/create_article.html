@@ -4,56 +4,101 @@
 
 {% block content %}
 <div class="container-fluid px-0">
-    <div class="card p-4 mx-auto" style="max-width: 900px;">
-        <h2 class="mb-4">{% if is_edit %}Edit Article{% else %}Create Article{% endif %}</h2>
-        <p class="text-muted mb-4">Fields marked with <span class="text-danger">*</span> are required.</p>
+    <div class="article-editor-layout mx-auto">
+        <div class="card p-4">
+            <h2 class="mb-4">{% if is_edit %}Edit Article{% else %}Create Article{% endif %}</h2>
+            <p class="text-muted mb-4">Fields marked with <span class="text-danger">*</span> are required.</p>
+            {% if is_edit and article and article.tags and 'about-us' in article.tags %}
+            <p class="text-muted mb-4">This database article powers the public About page because it has the about-us tag.</p>
+            {% endif %}
 
-        <form method="POST" action="{% if is_edit and article %}{{ url_for('edit_article', article_id=article.id) }}{% else %}{{ url_for('create_article') }}{% endif %}">
-            {{ form.hidden_tag() }}
+            <form method="POST" enctype="multipart/form-data" action="{% if is_edit and article %}{{ url_for('edit_article', article_id=article.id) }}{% else %}{{ url_for('create_article') }}{% endif %}">
+                {{ form.hidden_tag() }}
 
-            <div class="mb-3">
-                <label class="form-label">{{ form.title.label.text }} <span class="text-danger">*</span></label>
-                {{ form.title(class="form-control", placeholder="Article title") }}
-                {% if form.title.errors %}
-                    <div class="text-danger small mt-1">{{ form.title.errors[0] }}</div>
-                {% endif %}
-            </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ form.title.label.text }} <span class="text-danger">*</span></label>
+                    {{ form.title(class="form-control", placeholder="Article title") }}
+                    {% if form.title.errors %}
+                        <div class="text-danger small mt-1">{{ form.title.errors[0] }}</div>
+                    {% endif %}
+                </div>
 
-            <div class="mb-3">
-                {{ form.summary.label(class="form-label") }}
-                {{ form.summary(class="form-control", rows="3", placeholder="Short summary") }}
-            </div>
+                <div class="mb-3">
+                    {{ form.summary.label(class="form-label") }}
+                    {{ form.summary(class="form-control", rows="3", placeholder="Short summary") }}
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">{{ form.content.label.text }} <span class="text-danger">*</span></label>
-                {{ form.content(class="form-control", rows="10", placeholder="Main article content") }}
-                <div class="form-text text-muted mt-1">Supports simple markdown: # heading, ## heading, - list, 1. list, **bold**, *italic*, `code`, [link](https://...)</div>
-                {% if form.content.errors %}
-                    <div class="text-danger small mt-1">{{ form.content.errors[0] }}</div>
-                {% endif %}
-            </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ form.content.label.text }} <span class="text-danger">*</span></label>
+                    {{ form.content(class="form-control", rows="12", placeholder="Main article content") }}
+                    {% if form.content.errors %}
+                        <div class="text-danger small mt-1">{{ form.content.errors[0] }}</div>
+                    {% endif %}
+                </div>
 
-            <div class="mb-3">
-                {{ form.infobox_data.label(class="form-label") }}
-                {{ form.infobox_data(class="form-control", rows="6", placeholder="Country: England\nFirst played: 1863\nGoverning body: The FA") }}
-                <div class="form-text text-muted mt-1">Use one line per field in this format: Label: Value</div>
-            </div>
+                <div class="mb-3">
+                    {{ form.infobox_data.label(class="form-label") }}
+                    {{ form.infobox_data(class="form-control", rows="6", placeholder="Type: Project wiki\nStatus: Active\nPurpose: Community knowledge base") }}
+                </div>
 
-            <div class="mb-3">
-                {{ form.image_url.label(class="form-label") }}
-                {{ form.image_url(class="form-control", placeholder="https://example.com/image.png") }}
-            </div>
+                <div class="mb-3">
+                    {{ form.image_file.label(class="form-label") }}
+                    {{ form.image_file(class="form-control") }}
+                    <div class="form-text text-muted mt-1">Allowed formats: jpg, jpeg, png, gif, webp.</div>
+                    {% if form.image_file.errors %}
+                        <div class="text-danger small mt-1">{{ form.image_file.errors[0] }}</div>
+                    {% endif %}
+                    {% if is_edit and article and article.image_url %}
+                    <div class="form-text text-muted mt-1">Current picture: {{ article.image_url }}</div>
+                    {% endif %}
+                </div>
 
-            <div class="mb-4">
-                {{ form.tags.label(class="form-label") }}
-                {{ form.tags(class="form-control", placeholder="boss, puzzle, speedrun") }}
-            </div>
+                <div class="mb-4">
+                    {{ form.tags.label(class="form-label") }}
+                    {{ form.tags(class="form-control", placeholder="about-us, guide, lore") }}
+                    <div class="form-text text-muted mt-1">Use the tag about-us to make this article power the public About page.</div>
+                </div>
 
-            <div class="d-flex gap-2">
-                {{ form.submit(class="btn btn-brand", value=('Save Changes' if is_edit else 'Create Article')) }}
-                <a href="{{ url_for('index') }}" class="btn btn-outline-light">Cancel</a>
-            </div>
-        </form>
+                <div class="d-flex gap-2">
+                    {{ form.submit(class="btn btn-brand", value=('Save Changes' if is_edit else 'Create Article')) }}
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-light">Cancel</a>
+                </div>
+            </form>
+        </div>
+
+        <aside class="editor-help">
+            <details class="help-dropdown" open>
+                <summary>Markdown Cheatsheet</summary>
+                <div class="help-content">
+                    <h6>Structure</h6>
+                    <code># Page title</code>
+                    <code>## Section heading</code>
+                    <code>### Small heading</code>
+
+                    <h6>Text</h6>
+                    <code>**bold**</code>
+                    <code>*italic*</code>
+                    <code>`code`</code>
+                    <code>[link](https://example.com)</code>
+
+                    <h6>Lists</h6>
+                    <code>- bullet item</code>
+                    <code>1. numbered item</code>
+                    <code>&gt; quote text</code>
+
+                    <h6>Infobox</h6>
+                    <code>Type: Project wiki</code>
+                    <code>Status: Active</code>
+                    <code>Maintained by: Team name</code>
+
+                    <h6>Picture</h6>
+                    <p>Upload one image for the article infobox. Leaving it empty while editing keeps the current picture.</p>
+
+                    <h6>About Page</h6>
+                    <p>Add <code>about-us</code> in Tags, approve the article, and the About nav link will render it.</p>
+                </div>
+            </details>
+        </aside>
     </div>
 </div>
 {% endblock %}

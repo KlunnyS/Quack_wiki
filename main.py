@@ -1,12 +1,15 @@
 from datetime import datetime
 import html
+import os
 import re
-from sqlalchemy import func, text
+from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
+from uuid import uuid4
 
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
 
 from forms import ArticleForm, LoginForm, RegisterForm, RoleForm
@@ -23,10 +26,7 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
-    columns = [row[1] for row in db.session.execute(text("PRAGMA table_info(article)")).fetchall()]
-    if 'infobox_data' not in columns:
-        db.session.execute(text("ALTER TABLE article ADD COLUMN infobox_data TEXT"))
-        db.session.commit()
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     seed_admin()
 
 login_manager = LoginManager()
@@ -130,9 +130,25 @@ def render_simple_markdown(raw_text: str) -> str:
 
 
 def article_public_url(article_obj: Article) -> str:
-    if article_obj.title.strip().lower() == 'about-us':
+    if article_has_tag(article_obj, 'about-us'):
         return url_for('about')
     return url_for('article', article_title=article_obj.title)
+
+
+def article_has_tag(article_obj: Article, tag_name: str) -> bool:
+    wanted = tag_name.strip().lower()
+    return any(str(tag).strip().lower() == wanted for tag in (article_obj.tags or []))
+
+
+def find_published_article_by_tag(tag_name: str):
+    candidates = Article.query.filter(
+        Article.is_archived.is_(False),
+        func.lower(func.trim(Article.status)) == 'approved',
+    ).order_by(Article.created_at.desc()).all()
+    return next(
+        (article_obj for article_obj in candidates if article_has_tag(article_obj, tag_name)),
+        None,
+    )
 
 
 def can_edit_article(article_obj: Article) -> bool:
@@ -155,6 +171,22 @@ def parse_infobox_data(raw_data: str):
         else:
             rows.append((line, ''))
     return rows
+
+
+def save_article_image(file_storage):
+    if not file_storage or not file_storage.filename:
+        return None
+
+    safe_name = secure_filename(file_storage.filename)
+    if not safe_name:
+        return None
+
+    _, ext = os.path.splitext(safe_name)
+    filename = f"{uuid4().hex}{ext.lower()}"
+    upload_dir = app.config['UPLOAD_FOLDER']
+    os.makedirs(upload_dir, exist_ok=True)
+    file_storage.save(os.path.join(upload_dir, filename))
+    return f"upload/{filename}"
 
 
 def render_article_page(article_obj: Article):
@@ -235,15 +267,20 @@ def index():
 
 @app.route('/about')
 def about():
-    about_article = Article.query.filter(
-        Article.title == 'About-Us',
-        Article.is_archived.is_(False),
-        func.lower(func.trim(Article.status)) == 'approved',
-    ).first()
+    about_article = find_published_article_by_tag('about-us')
     if about_article:
         return render_article_page(about_article)
     flash('About article is not published yet.', 'info')
     return redirect(url_for('index'))
+
+
+@app.route('/wiki/<tag>')
+def tagged_article(tag):
+    article_obj = find_published_article_by_tag(tag)
+    if article_obj:
+        return render_article_page(article_obj)
+    flash(f'No published article found for tag: {tag}', 'info')
+    return redirect(url_for('articles'))
 
 
 @app.route('/articles')
@@ -277,7 +314,7 @@ def create_article():
         if form.tags.data:
             parsed_tags = [t.strip() for t in form.tags.data.split(',') if t.strip()]
 
-        image_url = (form.image_url.data or '').strip() or 'default.png'
+        image_path = save_article_image(form.image_file.data) or 'default.png'
 
         article_obj = Article(
             title=normalized_title,
@@ -285,7 +322,7 @@ def create_article():
             summary=(form.summary.data or '').strip(),
             content=form.content.data.strip(),
             infobox_data=(form.infobox_data.data or '').strip(),
-            image_url=image_url,
+            image_url=image_path,
             tags=parsed_tags,
             status='pending',
             approved_by=None,
@@ -332,7 +369,9 @@ def edit_article(article_id):
         article_obj.summary = (form.summary.data or '').strip()
         article_obj.content = form.content.data.strip()
         article_obj.infobox_data = (form.infobox_data.data or '').strip()
-        article_obj.image_url = (form.image_url.data or '').strip() or 'default.png'
+        uploaded_image = save_article_image(form.image_file.data)
+        if uploaded_image:
+            article_obj.image_url = uploaded_image
         article_obj.tags = [t.strip() for t in (form.tags.data or '').split(',') if t.strip()]
 
         if current_user.role != 'admin':
@@ -418,10 +457,12 @@ def dashboard_articles():
         'status_za': Article.status.desc(),
     }
     articles = query.order_by(sort_map.get(sort, Article.created_at.desc())).all()
+    article_links = {article_obj.id: article_public_url(article_obj) for article_obj in articles}
 
     return render_template(
         'dashboard_articles.html',
         articles=articles,
+        article_links=article_links,
         search=search,
         status_filter=status_filter,
         show_archived=show_archived,
@@ -522,7 +563,7 @@ def toggle_archive_article(article_id):
 
 @app.route('/article/<article_title>')
 def article(article_title):
-    if article_title.strip().lower() == 'about-us':
-        return redirect(url_for('about'))
     article_obj = Article.query.filter_by(title=article_title, is_archived=False).first_or_404()
+    if article_has_tag(article_obj, 'about-us'):
+        return redirect(url_for('about'))
     return render_article_page(article_obj)

@@ -1,3 +1,5 @@
+{% from "partials/tag_link.html" import tag_article_link %}
+
 <nav class="wiki-sidebar">
     {% if current_user.is_authenticated and current_user.role in ['admin', 'writer'] and request.endpoint in ['dashboard_users', 'dashboard_articles'] %}
     <h6 class="sidebar-title">Dashboard</h6>
@@ -10,11 +12,11 @@
     <h6 class="sidebar-title">Explore</h6>
     <a href="{{ url_for('index') }}"><i class="bi bi-house-door sidebar-icon"></i>Overview</a>
     <a href="{{ url_for('articles') }}"><i class="bi bi-journal-richtext sidebar-icon"></i>Articles</a>
-    <a href="{{ url_for('about') }}"><i class="bi bi-info-circle sidebar-icon"></i>About</a>
-    <a href="{{ url_for('index') }}"><i class="bi bi-map sidebar-icon"></i>Levels</a>
-    <a href="{{ url_for('index') }}"><i class="bi bi-bullseye sidebar-icon"></i>Weapons</a>
-    <a href="{{ url_for('index') }}"><i class="bi bi-shield-x sidebar-icon"></i>Enemies</a>
-    <a href="{{ url_for('index') }}"><i class="bi bi-book sidebar-icon"></i>Lore</a>
-    <a href="{{ url_for('index') }}"><i class="bi bi-tools sidebar-icon"></i>Development</a>
+    {{ tag_article_link('about-us', 'About', 'bi bi-info-circle') }}
+    {{ tag_article_link('levels', 'Levels', 'bi bi-map') }}
+    {{ tag_article_link('weapons', 'Weapons', 'bi bi-bullseye') }}
+    {{ tag_article_link('enemies', 'Enemies', 'bi bi-shield-x') }}
+    {{ tag_article_link('lore', 'Lore', 'bi bi-book') }}
+    {{ tag_article_link('development', 'Development', 'bi bi-tools') }}
     {% endif %}
 </nav>
