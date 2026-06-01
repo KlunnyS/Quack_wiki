@@ -1,0 +1,55 @@
+{% extends "_base.html" %}
+
+{% block title %}{{ profile_user.public_display_name or profile_user.username }} - Quack Wiki{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <section class="author-hero mb-4">
+        {% if profile_user.profile_image_url %}
+        <img class="author-avatar" src="{{ url_for('static', filename='img/' ~ profile_user.profile_image_url) }}" alt="{{ profile_user.username }} profile picture">
+        {% else %}
+        <div class="author-avatar author-avatar-fallback">{{ profile_user.username[0]|upper }}</div>
+        {% endif %}
+        <div>
+            <p class="article-meta mb-1">{{ profile_user.role|capitalize }} Author</p>
+            <h1 class="article-title mb-2">{{ profile_user.public_display_name or profile_user.username }}</h1>
+            <p class="author-username mb-3">@{{ profile_user.username }}</p>
+            <p class="author-bio mb-0">{{ profile_user.public_bio or "This author has not added a public bio yet." }}</p>
+        </div>
+    </section>
+
+    <section class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-1">Published Pages</h3>
+            <p class="article-meta mb-0">{{ articles|length }} public {{ 'page' if articles|length == 1 else 'pages' }}</p>
+        </div>
+    </section>
+
+    <section class="my-pages-grid">
+        {% for article in articles %}
+        <article class="my-page-card">
+            <div class="my-page-card-top">
+                <span class="my-page-status my-page-status-approved">Approved</span>
+                <span class="article-meta">{{ article.created_at.strftime('%Y-%m-%d') if article.created_at else 'Unknown date' }}</span>
+            </div>
+            <h3 class="my-page-title">{{ article.title }}</h3>
+            <p class="my-page-summary">{{ article.summary or "No summary available yet." }}</p>
+            {% if article.tags %}
+            <div class="my-page-tags">
+                {% for tag in article.tags[:5] %}
+                <span>{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="my-page-actions">
+                <a class="btn btn-outline-light btn-sm" href="{{ article_links[article.id] }}">Open</a>
+            </div>
+        </article>
+        {% else %}
+        <div class="card p-4 my-pages-empty">
+            <p class="text-muted mb-0">No published pages yet.</p>
+        </div>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

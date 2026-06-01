@@ -1,0 +1,100 @@
+{% extends "_base.html" %}
+
+{% block title %}My Pages - Quack Wiki{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <header class="article-header mb-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+            <div>
+                <h1 class="article-title">My Pages</h1>
+                <p class="article-meta mb-0">Search, filter, and manage the pages you created.</p>
+            </div>
+            <a class="btn btn-brand align-self-lg-start" href="{{ url_for('create_article') }}">New Article</a>
+        </div>
+    </header>
+
+    <section class="card p-3 p-lg-4 mb-4">
+        <form method="GET" action="{{ url_for('my_pages') }}" class="row g-2 align-items-end" id="myPagesFilterForm">
+            <div class="col-lg-5">
+                <label class="form-label" for="myPagesSearch">Search pages</label>
+                <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search title, summary, author, or tag" id="myPagesSearch">
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <label class="form-label" for="myPagesStatus">Status</label>
+                <select class="form-select" name="status" id="myPagesStatus" onchange="this.form.submit()">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All statuses</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="declined" {% if status_filter == 'declined' %}selected{% endif %}>Declined</option>
+                </select>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <label class="form-label" for="myPagesSort">Sort</label>
+                <select class="form-select" name="sort" id="myPagesSort" onchange="this.form.submit()">
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+                    <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+                    <option value="title_az" {% if sort == 'title_az' %}selected{% endif %}>Title A-Z</option>
+                    <option value="title_za" {% if sort == 'title_za' %}selected{% endif %}>Title Z-A</option>
+                    <option value="status_az" {% if sort == 'status_az' %}selected{% endif %}>Status A-Z</option>
+                    <option value="status_za" {% if sort == 'status_za' %}selected{% endif %}>Status Z-A</option>
+                </select>
+            </div>
+            <div class="col-lg-1">
+                <button class="btn btn-outline-light w-100" type="submit">Go</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="my-pages-grid">
+        {% for article in user_articles %}
+        <article class="my-page-card">
+            <div class="my-page-card-top">
+                <span class="my-page-status my-page-status-{{ article.status }}">{{ article.status|capitalize }}</span>
+                <span class="article-meta">{{ article.created_at.strftime('%Y-%m-%d') if article.created_at else 'Unknown date' }}</span>
+            </div>
+            <h3 class="my-page-title">{{ article.title }}</h3>
+            <p class="my-page-summary">{{ article.summary or "No summary available yet." }}</p>
+            {% if article.tags %}
+            <div class="my-page-tags">
+                {% for tag in article.tags[:5] %}
+                <span>{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="my-page-actions">
+                {% if article.status == 'approved' %}
+                <a class="btn btn-outline-light btn-sm" href="{{ article_links[article.id] }}">Open</a>
+                {% else %}
+                <button class="btn btn-outline-secondary btn-sm" type="button" disabled>Not public</button>
+                {% endif %}
+                <a class="btn btn-brand btn-sm" href="{{ url_for('edit_article', article_id=article.id) }}">Edit</a>
+                <form method="POST" action="{{ url_for('archive_own_article', article_id=article.id) }}">
+                    <button class="btn btn-outline-warning btn-sm" type="submit">Archive</button>
+                </form>
+            </div>
+        </article>
+        {% else %}
+        <div class="card p-4 my-pages-empty">
+            <h4 class="mb-2">No pages found</h4>
+            <p class="text-muted mb-3">Try a different search/filter, or create your first article.</p>
+            <a class="btn btn-brand align-self-start" href="{{ url_for('create_article') }}">Create Article</a>
+        </div>
+        {% endfor %}
+    </section>
+</div>
+
+<script>
+(() => {
+    const search = document.getElementById('myPagesSearch');
+    const form = document.getElementById('myPagesFilterForm');
+    let timeout;
+    if (search && form) {
+        search.addEventListener('input', () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => form.submit(), 300);
+        });
+    }
+})();
+</script>
+{% endblock %}

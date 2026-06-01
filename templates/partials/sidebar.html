@@ -1,11 +1,12 @@
 
 <nav class="wiki-sidebar">
-    {% if current_user.is_authenticated and current_user.role in ['admin', 'writer'] and request.endpoint in ['dashboard_users', 'dashboard_articles'] %}
+    {% if current_user.is_authenticated and current_user.role in ['admin', 'writer'] and request.endpoint in ['dashboard_users', 'dashboard_articles', 'dashboard_updates'] %}
     <h6 class="sidebar-title">Dashboard</h6>
     {% if current_user.role == 'admin' %}
     <a href="{{ url_for('dashboard_users') }}"><i class="bi bi-people-fill sidebar-icon"></i>Users</a>
     {% endif %}
     <a href="{{ url_for('dashboard_articles') }}"><i class="bi bi-journal-text sidebar-icon"></i>Articles</a>
+    <a href="{{ url_for('dashboard_updates') }}"><i class="bi bi-inbox sidebar-icon"></i>Pending Updates</a>
     <a href="{{ url_for('create_article') }}"><i class="bi bi-plus-square sidebar-icon"></i>Create Article</a>
     {% else %}
     <h6 class="sidebar-title">Explore</h6>

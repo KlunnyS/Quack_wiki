@@ -152,12 +152,185 @@ a {
     background: linear-gradient(135deg, var(--brand), var(--brand-2));
 }
 
+.profile-avatar-img {
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.12);
+}
+
 .profile-name {
     max-width: 130px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 0.92rem;
+}
+
+.profile-page-avatar {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.22);
+}
+
+.profile-page-avatar-fallback {
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+}
+
+.profile-page-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-page-item:last-child {
+    border-bottom: 0;
+}
+
+.my-pages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.my-page-card {
+    display: flex;
+    min-height: 260px;
+    flex-direction: column;
+    padding: 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius);
+    background:
+        radial-gradient(circle at top right, rgba(250, 199, 92, 0.13), transparent 34%),
+        rgba(12, 18, 34, 0.78);
+    box-shadow: var(--shadow);
+}
+
+.my-page-card-top,
+.my-page-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.my-page-title {
+    margin: 1rem 0 0.55rem;
+    font-size: 1.25rem;
+    color: #fff;
+}
+
+.my-page-summary {
+    flex: 1;
+    color: var(--text-dim);
+    line-height: 1.55;
+}
+
+.my-page-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: auto;
+    padding-top: 1rem;
+}
+
+.my-page-tags span {
+    padding: 0.24rem 0.5rem;
+    border-radius: 999px;
+    color: #dce7ff;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.8rem;
+}
+
+.my-page-actions {
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.my-page-actions .btn {
+    min-width: 86px;
+}
+
+.my-page-actions form {
+    margin: 0;
+}
+
+.my-page-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.24rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.my-page-status-approved {
+    color: #b7f8cc;
+    background: rgba(51, 190, 102, 0.16);
+}
+
+.my-page-status-pending {
+    color: #ffe4a3;
+    background: rgba(250, 199, 92, 0.16);
+}
+
+.my-page-status-declined {
+    color: #ffb8b8;
+    background: rgba(255, 98, 98, 0.16);
+}
+
+.my-pages-empty {
+    grid-column: 1 / -1;
+}
+
+.author-hero {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.25rem;
+    align-items: center;
+    padding: 1.35rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius);
+    background:
+        radial-gradient(circle at top left, rgba(111, 137, 255, 0.18), transparent 34%),
+        rgba(12, 18, 34, 0.78);
+    box-shadow: var(--shadow);
+}
+
+.author-avatar {
+    width: 108px;
+    height: 108px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.24);
+}
+
+.author-avatar-fallback {
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+}
+
+.author-username {
+    color: #dce7ff;
+}
+
+.author-bio {
+    max-width: 760px;
+    color: var(--text-dim);
+    line-height: 1.65;
 }
 
 .layout-shell {
@@ -257,7 +430,10 @@ a {
 
 .article-body h1,
 .article-body h2,
-.article-body h3 {
+.article-body h3,
+.article-body h4,
+.article-body h5,
+.article-body h6 {
     color: #ffffff;
     margin-top: 1.6rem;
     margin-bottom: 0.65rem;
@@ -277,6 +453,15 @@ a {
     font-size: 1.35rem;
 }
 
+.article-body h4 {
+    font-size: 1.18rem;
+}
+
+.article-body h5,
+.article-body h6 {
+    font-size: 1rem;
+}
+
 .article-body p {
     margin-bottom: 1rem;
 }
@@ -292,6 +477,18 @@ a {
     color: #f6c98f;
     border-radius: 6px;
     padding: 0.08rem 0.3rem;
+}
+
+.article-body pre {
+    padding: 0.85rem;
+    border-radius: 10px;
+    overflow-x: auto;
+    background: rgba(0, 0, 0, 0.28);
+}
+
+.article-body pre code {
+    background: transparent;
+    padding: 0;
 }
 
 .article-body blockquote {
@@ -614,5 +811,14 @@ a {
 
     .editor-help {
         position: static;
+    }
+
+    .author-hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .author-avatar {
+        margin: 0 auto;
     }
 }

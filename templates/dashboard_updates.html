@@ -1,0 +1,100 @@
+{% extends "_base.html" %}
+
+{% block title %}Pending Updates - Quack Wiki{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <section class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Pending Updates</h4>
+            <span class="text-muted">Total: {{ pending_revisions|length }}</span>
+        </div>
+
+        <form method="GET" action="{{ url_for('dashboard_updates') }}" class="row g-2 mb-3" id="updatesFilterForm">
+            <div class="col-md-6">
+                <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search article, proposed title, editor, summary, or tag" id="updatesSearch">
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" name="sort" onchange="this.form.submit()">
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Sort: Newest</option>
+                    <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Sort: Oldest</option>
+                    <option value="title_az" {% if sort == 'title_az' %}selected{% endif %}>Proposed Title A-Z</option>
+                    <option value="title_za" {% if sort == 'title_za' %}selected{% endif %}>Proposed Title Z-A</option>
+                    <option value="editor_az" {% if sort == 'editor_az' %}selected{% endif %}>Editor A-Z</option>
+                    <option value="editor_za" {% if sort == 'editor_za' %}selected{% endif %}>Editor Z-A</option>
+                </select>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th>Editor</th>
+                        <th>Submitted</th>
+                        <th>Proposed Title</th>
+                        <th>Summary</th>
+                        <th>Tags</th>
+                        {% if current_user.role == 'admin' %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for revision in pending_revisions %}
+                    <tr>
+                        <td>
+                            {% if revision.article %}
+                            <a href="{{ article_links.get(revision.article.id, url_for('article', article_title=revision.article.title)) }}">{{ revision.article.title }}</a>
+                            {% else %}
+                            <span class="text-muted">Missing article</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ revision.editor }}</td>
+                        <td>{{ revision.created_at.strftime('%Y-%m-%d %H:%M') if revision.created_at else '-' }}</td>
+                        <td>{{ revision.title }}</td>
+                        <td>{{ revision.summary or '-' }}</td>
+                        <td>
+                            {% for tag in revision.tags or [] %}
+                            <span class="badge bg-secondary">{{ tag }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endfor %}
+                        </td>
+                        {% if current_user.role == 'admin' %}
+                        <td class="d-flex gap-2 flex-wrap">
+                            <form method="POST" action="{{ url_for('approve_revision', revision_id=revision.id) }}">
+                                <button type="submit" class="btn btn-success btn-sm">Approve Update</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('decline_revision', revision_id=revision.id) }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Decline Update</button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="{% if current_user.role == 'admin' %}7{% else %}6{% endif %}" class="text-muted">No pending updates.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script>
+(() => {
+    const search = document.getElementById('updatesSearch');
+    const form = document.getElementById('updatesFilterForm');
+    let t;
+    if (search && form) {
+        search.addEventListener('input', () => {
+            clearTimeout(t);
+            t = setTimeout(() => form.submit(), 300);
+        });
+    }
+})();
+</script>
+{% endblock %}

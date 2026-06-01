@@ -24,6 +24,24 @@ class RoleForm(FlaskForm):
         ], validators=[DataRequired()])
     submit = SubmitField("Change")
 
+class ProfileForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=2, max=30)])
+    public_display_name = StringField('Public display name', validators=[Length(max=80)])
+    public_bio = TextAreaField('Public bio', validators=[Length(max=600)])
+    profile_image = FileField('Profile picture', validators=[
+        FileAllowed(["jpg", "jpeg", "png", "gif", "webp"], "Images only.")
+    ])
+    submit = SubmitField('Save profile')
+
+class PasswordChangeForm(FlaskForm):
+    current_password = PasswordField('Current password', validators=[DataRequired()])
+    password = PasswordField('New password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField(
+        'Confirm new password',
+        validators=[DataRequired(), EqualTo('password', message='Passwords don\'t match')]
+    )
+    submit = SubmitField('Change password')
+
 class ArticleForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired(), Length(min=3, max=120)])
     summary = TextAreaField("Summary", validators=[Length(max=1000)])

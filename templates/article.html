@@ -7,7 +7,12 @@
     <header class="article-header mb-3">
         <h1 class="article-title">{{ article.title or "Untitled" }}</h1>
         <p class="article-meta mb-0">
-            By {{ article.author or "Unknown" }}
+            By
+            {% if author_user %}
+            <a href="{{ url_for('public_profile', username=author_user.username) }}">{{ author_user.public_display_name or author_user.username }}</a>
+            {% else %}
+            {{ article.author or "Unknown" }}
+            {% endif %}
             {% if article.created_at %}| {{ article.created_at.strftime('%Y-%m-%d') }}{% endif %}
             {% if article.status %}| {{ article.status|title }}{% endif %}
         </p>
@@ -33,6 +38,9 @@
                 <button class="btn btn-outline-danger btn-sm">Decline</button>
             </form>
             {% endif %}
+        {% endif %}
+        {% if pending_revision and current_user.is_authenticated and (current_user.role == 'admin' or current_user.username == pending_revision.editor) %}
+        <span class="badge bg-warning text-dark align-self-center">Pending update awaiting approval</span>
         {% endif %}
     </div>
 

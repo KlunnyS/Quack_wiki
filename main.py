@@ -9,11 +9,12 @@ from uuid import uuid4
 
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from sqlalchemy import text
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
 
-from forms import ArticleForm, LoginForm, RegisterForm, RoleForm
-from models import Article, User, db
+from forms import ArticleForm, LoginForm, PasswordChangeForm, ProfileForm, RegisterForm, RoleForm
+from models import Article, ArticleRevision, User, db
 from seed import seed_admin
 
 app = Flask(__name__)
@@ -21,12 +22,29 @@ app.config['SECRET_KEY'] = '#K0nMykvNSC3OyQcA'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pages.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/img/upload'
+app.config['PROFILE_UPLOAD_FOLDER'] = 'static/img/profile'
 
 db.init_app(app)
+
+
+def ensure_user_profile_columns():
+    columns = db.session.execute(text("PRAGMA table_info(user)")).fetchall()
+    column_names = {column[1] for column in columns}
+    if 'profile_image_url' not in column_names:
+        db.session.execute(text("ALTER TABLE user ADD COLUMN profile_image_url VARCHAR(120)"))
+    if 'public_display_name' not in column_names:
+        db.session.execute(text("ALTER TABLE user ADD COLUMN public_display_name VARCHAR(80)"))
+    if 'public_bio' not in column_names:
+        db.session.execute(text("ALTER TABLE user ADD COLUMN public_bio TEXT"))
+    if {'profile_image_url', 'public_display_name', 'public_bio'} - column_names:
+        db.session.commit()
+
 
 with app.app_context():
     db.create_all()
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['PROFILE_UPLOAD_FOLDER'], exist_ok=True)
+    ensure_user_profile_columns()
     seed_admin()
 
 login_manager = LoginManager()
@@ -54,10 +72,24 @@ def role_required(role_names: list):
 
 
 def _inline_markdown(text: str) -> str:
-    text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
+    code_spans = []
+
+    def stash_code(match):
+        code_spans.append(f"<code>{html.escape(match.group(1))}</code>")
+        return f"@@CODE{len(code_spans) - 1}@@"
+
+    text = re.sub(r'`([^`]+)`', stash_code, text)
+    text = html.escape(text)
+    text = re.sub(
+        r'\[([^\]]+)\]\((https?://[^\s)]+)\)',
+        r'<a href="\2" target="_blank" rel="noopener noreferrer">\1</a>',
+        text,
+    )
     text = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', text)
-    text = re.sub(r'\*([^*]+)\*', r'<em>\1</em>', text)
-    text = re.sub(r'\[([^\]]+)\]\((https?://[^\s)]+)\)', r'<a href="\2" target="_blank" rel="noopener noreferrer">\1</a>', text)
+    text = re.sub(r'(?<!\*)\*([^*]+)\*(?!\*)', r'<em>\1</em>', text)
+
+    for index, code_html in enumerate(code_spans):
+        text = text.replace(f"@@CODE{index}@@", code_html)
     return text
 
 
@@ -65,11 +97,14 @@ def render_simple_markdown(raw_text: str) -> str:
     if not raw_text:
         return '<p>No content yet.</p>'
 
-    text = html.escape(raw_text.strip())
+    text = raw_text.replace('\r\n', '\n').replace('\r', '\n').strip()
     lines = text.splitlines()
     blocks = []
+    paragraph = []
     in_ul = False
     in_ol = False
+    in_code = False
+    code_lines = []
 
     def close_lists():
         nonlocal in_ul, in_ol
@@ -80,29 +115,55 @@ def render_simple_markdown(raw_text: str) -> str:
             blocks.append('</ol>')
             in_ol = False
 
+    def flush_paragraph():
+        if paragraph:
+            blocks.append(f"<p>{_inline_markdown(' '.join(paragraph))}</p>")
+            paragraph.clear()
+
+    def flush_code():
+        if code_lines:
+            code_text = '\n'.join(code_lines)
+            blocks.append(f"<pre><code>{html.escape(code_text)}</code></pre>")
+            code_lines.clear()
+
     for line in lines:
         stripped = line.strip()
+
+        if stripped.startswith('```'):
+            if in_code:
+                flush_code()
+                in_code = False
+            else:
+                flush_paragraph()
+                close_lists()
+                in_code = True
+            continue
+
+        if in_code:
+            code_lines.append(line)
+            continue
+
         if not stripped:
+            flush_paragraph()
             close_lists()
             continue
 
-        if stripped.startswith('### '):
+        heading = re.match(r'^(#{1,6})\s*(.+)$', stripped)
+        if heading:
+            flush_paragraph()
             close_lists()
-            blocks.append(f"<h3>{_inline_markdown(stripped[4:])}</h3>")
+            level = min(len(heading.group(1)), 6)
+            blocks.append(f"<h{level}>{_inline_markdown(heading.group(2).strip())}</h{level}>")
             continue
-        if stripped.startswith('## '):
-            close_lists()
-            blocks.append(f"<h2>{_inline_markdown(stripped[3:])}</h2>")
-            continue
-        if stripped.startswith('# '):
-            close_lists()
-            blocks.append(f"<h1>{_inline_markdown(stripped[2:])}</h1>")
-            continue
+
         if stripped.startswith('> '):
+            flush_paragraph()
             close_lists()
-            blocks.append(f"<blockquote>{_inline_markdown(stripped[2:])}</blockquote>")
+            blocks.append(f"<blockquote><p>{_inline_markdown(stripped[2:].strip())}</p></blockquote>")
             continue
+
         if re.match(r'^\d+\.\s+', stripped):
+            flush_paragraph()
             if in_ul:
                 blocks.append('</ul>')
                 in_ul = False
@@ -112,19 +173,25 @@ def render_simple_markdown(raw_text: str) -> str:
             item = re.sub(r'^\d+\.\s+', '', stripped)
             blocks.append(f"<li>{_inline_markdown(item)}</li>")
             continue
-        if stripped.startswith('- '):
+
+        if re.match(r'^[-*+]\s+', stripped):
+            flush_paragraph()
             if in_ol:
                 blocks.append('</ol>')
                 in_ol = False
             if not in_ul:
                 blocks.append('<ul>')
                 in_ul = True
-            blocks.append(f"<li>{_inline_markdown(stripped[2:])}</li>")
+            item = re.sub(r'^[-*+]\s+', '', stripped)
+            blocks.append(f"<li>{_inline_markdown(item)}</li>")
             continue
 
         close_lists()
-        blocks.append(f"<p>{_inline_markdown(stripped)}</p>")
+        paragraph.append(stripped)
 
+    if in_code:
+        flush_code()
+    flush_paragraph()
     close_lists()
     return '\n'.join(blocks)
 
@@ -133,6 +200,14 @@ def article_public_url(article_obj: Article) -> str:
     if article_has_tag(article_obj, static_page_tag('about-us')):
         return url_for('about')
     return url_for('article', article_title=article_obj.title)
+
+
+def article_is_public(article_obj: Article) -> bool:
+    return article_obj and not article_obj.is_archived and article_obj.status == 'approved'
+
+
+def can_open_article(article_obj: Article) -> bool:
+    return article_is_public(article_obj)
 
 
 def static_page_tag(page_key: str) -> str:
@@ -155,6 +230,21 @@ def article_matches_search(article_obj: Article, search: str) -> bool:
         article_obj.author or '',
     ]
     tags = [str(tag) for tag in (article_obj.tags or [])]
+    return any(needle in value.lower() for value in fields + tags)
+
+
+def revision_matches_search(revision: ArticleRevision, search: str) -> bool:
+    needle = search.strip().lower()
+    if not needle:
+        return True
+
+    fields = [
+        revision.article.title if revision.article else '',
+        revision.title or '',
+        revision.summary or '',
+        revision.editor or '',
+    ]
+    tags = [str(tag) for tag in (revision.tags or [])]
     return any(needle in value.lower() for value in fields + tags)
 
 
@@ -191,6 +281,8 @@ def normalize_article_tags(raw_tags: str):
 def can_edit_article(article_obj: Article) -> bool:
     if not current_user.is_authenticated:
         return False
+    if article_obj.is_archived:
+        return False
     if current_user.role in ['admin', 'writer']:
         return True
     return article_obj.author == current_user.username
@@ -226,9 +318,74 @@ def save_article_image(file_storage):
     return f"upload/{filename}"
 
 
+def save_profile_image(file_storage):
+    if not file_storage or not file_storage.filename:
+        return None
+
+    safe_name = secure_filename(file_storage.filename)
+    if not safe_name:
+        return None
+
+    _, ext = os.path.splitext(safe_name)
+    filename = f"{uuid4().hex}{ext.lower()}"
+    upload_dir = app.config['PROFILE_UPLOAD_FOLDER']
+    os.makedirs(upload_dir, exist_ok=True)
+    file_storage.save(os.path.join(upload_dir, filename))
+    return f"profile/{filename}"
+
+
+def sync_username_references(old_username: str, new_username: str):
+    if old_username == new_username:
+        return
+
+    Article.query.filter_by(author=old_username).update({'author': new_username})
+    Article.query.filter_by(approved_by=old_username).update({'approved_by': new_username})
+    ArticleRevision.query.filter_by(editor=old_username).update({'editor': new_username})
+
+
+def save_or_replace_pending_revision(article_obj, form, parsed_tags, image_path):
+    revision = ArticleRevision.query.filter_by(
+        article_id=article_obj.id,
+        status='pending',
+    ).first()
+    if not revision:
+        revision = ArticleRevision(article_id=article_obj.id, editor=current_user.username)
+        db.session.add(revision)
+
+    revision.editor = current_user.username
+    revision.created_at = datetime.utcnow()
+    revision.title = form.title.data.strip()
+    revision.summary = (form.summary.data or '').strip()
+    revision.content = form.content.data.strip()
+    revision.infobox_data = (form.infobox_data.data or '').strip()
+    revision.image_url = image_path
+    revision.tags = parsed_tags
+    revision.status = 'pending'
+    return revision
+
+
+def apply_revision(revision):
+    article_obj = revision.article
+    article_obj.title = revision.title
+    article_obj.summary = revision.summary
+    article_obj.content = revision.content
+    article_obj.infobox_data = revision.infobox_data
+    article_obj.image_url = revision.image_url
+    article_obj.tags = revision.tags
+    article_obj.status = 'approved'
+    article_obj.approved_by = current_user.username
+    article_obj.approved_at = datetime.utcnow()
+    db.session.delete(revision)
+    return article_obj
+
+
 def render_article_page(article_obj: Article):
     rendered_content = render_simple_markdown(article_obj.content)
     infobox_rows = parse_infobox_data(article_obj.infobox_data)
+    pending_revision = ArticleRevision.query.filter_by(
+        article_id=article_obj.id,
+        status='pending',
+    ).order_by(ArticleRevision.created_at.desc()).first()
     if not infobox_rows:
         infobox_rows = [
             ('Author', article_obj.author or 'Unknown'),
@@ -238,11 +395,13 @@ def render_article_page(article_obj: Article):
     return render_template(
         'article.html',
         article=article_obj,
+        author_user=User.query.filter_by(username=article_obj.author).first(),
         random_article=None,
         rendered_content=rendered_content,
         infobox_rows=infobox_rows,
         article_link=article_public_url(article_obj),
         can_edit=can_edit_article(article_obj),
+        pending_revision=pending_revision,
     )
 
 
@@ -251,13 +410,18 @@ def register():
     form = RegisterForm()
 
     if form.validate_on_submit():
-        existing_user = User.query.filter_by(email=form.email.data).first()
-        if existing_user:
+        existing_email = User.query.filter_by(email=form.email.data).first()
+        existing_username = User.query.filter_by(username=form.username.data.strip()).first()
+        if existing_email:
             msg = 'An account with this email already exists.'
             form.email.errors.append(msg)
             flash(msg, 'danger')
+        elif existing_username:
+            msg = 'This username is already taken.'
+            form.username.errors.append(msg)
+            flash(msg, 'danger')
         else:
-            new_user = User(username=form.username.data, email=form.email.data)
+            new_user = User(username=form.username.data.strip(), email=form.email.data)
             new_user.set_password(form.password.data)
             db.session.add(new_user)
             db.session.commit()
@@ -295,6 +459,108 @@ def logout():
     logout_user()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('index'))
+
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    profile_form = ProfileForm(obj=current_user)
+    password_form = PasswordChangeForm()
+
+    if request.method == 'POST':
+        form_type = request.form.get('form_type')
+
+        if form_type == 'profile':
+            profile_form = ProfileForm()
+            if profile_form.validate_on_submit():
+                new_username = profile_form.username.data.strip()
+                existing_user = User.query.filter(
+                    User.username == new_username,
+                    User.id != current_user.id,
+                ).first()
+                if existing_user:
+                    profile_form.username.errors.append('This username is already taken.')
+                    flash('This username is already taken.', 'danger')
+                else:
+                    old_username = current_user.username
+                    image_path = save_profile_image(profile_form.profile_image.data)
+                    current_user.username = new_username
+                    current_user.public_display_name = (profile_form.public_display_name.data or '').strip() or None
+                    current_user.public_bio = (profile_form.public_bio.data or '').strip() or None
+                    if image_path:
+                        current_user.profile_image_url = image_path
+                    sync_username_references(old_username, new_username)
+                    db.session.commit()
+                    flash('Profile updated successfully.', 'success')
+                    return redirect(url_for('profile'))
+
+        elif form_type == 'password':
+            if password_form.validate_on_submit():
+                if not current_user.check_password(password_form.current_password.data):
+                    password_form.current_password.errors.append('Current password is incorrect.')
+                    flash('Current password is incorrect.', 'danger')
+                else:
+                    current_user.set_password(password_form.password.data)
+                    db.session.commit()
+                    flash('Password changed successfully.', 'success')
+                    return redirect(url_for('profile'))
+
+    return render_template(
+        'profile.html',
+        profile_form=profile_form,
+        password_form=password_form,
+    )
+
+
+@app.route('/my-pages')
+@login_required
+def my_pages():
+    search = (request.args.get('q') or '').strip()
+    status_filter = (request.args.get('status') or 'all').strip().lower()
+    sort = (request.args.get('sort') or 'newest').strip().lower()
+
+    query = Article.query.filter_by(author=current_user.username, is_archived=False)
+    if status_filter in {'pending', 'approved', 'declined'}:
+        query = query.filter(Article.status == status_filter)
+
+    sort_map = {
+        'newest': Article.created_at.desc(),
+        'oldest': Article.created_at.asc(),
+        'title_az': Article.title.asc(),
+        'title_za': Article.title.desc(),
+        'status_az': Article.status.asc(),
+        'status_za': Article.status.desc(),
+    }
+    user_articles = query.order_by(sort_map.get(sort, Article.created_at.desc())).all()
+    if search:
+        user_articles = [article_obj for article_obj in user_articles if article_matches_search(article_obj, search)]
+
+    article_links = {article_obj.id: article_public_url(article_obj) for article_obj in user_articles}
+    return render_template(
+        'my_pages.html',
+        user_articles=user_articles,
+        article_links=article_links,
+        search=search,
+        status_filter=status_filter,
+        sort=sort,
+    )
+
+
+@app.route('/authors/<username>')
+def public_profile(username):
+    user = User.query.filter_by(username=username, is_archived=False).first_or_404()
+    articles = Article.query.filter_by(
+        author=user.username,
+        status='approved',
+        is_archived=False,
+    ).order_by(Article.created_at.desc()).all()
+    article_links = {article_obj.id: article_public_url(article_obj) for article_obj in articles}
+    return render_template(
+        'public_profile.html',
+        profile_user=user,
+        articles=articles,
+        article_links=article_links,
+    )
 
 
 @app.route('/')
@@ -383,13 +649,21 @@ def create_article():
 @login_required
 def edit_article(article_id):
     article_obj = Article.query.get_or_404(article_id)
+    if article_obj.is_archived:
+        flash('Archived articles cannot be edited.', 'warning')
+        return redirect(url_for('my_pages') if article_obj.author == current_user.username else url_for('articles'))
     if not can_edit_article(article_obj):
         abort(403)
 
-    form = ArticleForm(obj=article_obj)
+    pending_revision = ArticleRevision.query.filter_by(
+        article_id=article_obj.id,
+        status='pending',
+    ).order_by(ArticleRevision.created_at.desc()).first()
+    form_source = pending_revision or article_obj
+    form = ArticleForm(obj=form_source)
     if request.method == 'GET':
-        form.tags.data = ', '.join(article_obj.tags or [])
-        form.infobox_data.data = article_obj.infobox_data or ''
+        form.tags.data = ', '.join(form_source.tags or [])
+        form.infobox_data.data = form_source.infobox_data or ''
 
     if form.validate_on_submit():
         normalized_title = form.title.data.strip()
@@ -401,28 +675,31 @@ def edit_article(article_id):
             flash('Article with this title already exists.', 'danger')
             return render_template('create_article.html', form=form, is_edit=True, article=article_obj)
 
-        article_obj.title = normalized_title
-        article_obj.summary = (form.summary.data or '').strip()
-        article_obj.content = form.content.data.strip()
-        article_obj.infobox_data = (form.infobox_data.data or '').strip()
         uploaded_image = save_article_image(form.image_file.data)
-        if uploaded_image:
-            article_obj.image_url = uploaded_image
         parsed_tags, removed_reserved = normalize_article_tags(form.tags.data)
         if removed_reserved:
             flash('Reserved page tags can only be used by writers and admins.', 'warning')
-        article_obj.tags = parsed_tags
+        image_path = uploaded_image or article_obj.image_url or 'default.png'
 
-        if current_user.role != 'admin':
-            article_obj.status = 'pending'
-            article_obj.approved_by = None
-            article_obj.approved_at = None
-            flash('Article updated and sent for approval.', 'info')
-        else:
+        if current_user.role == 'admin' and article_obj.status == 'approved':
+            article_obj.title = normalized_title
+            article_obj.summary = (form.summary.data or '').strip()
+            article_obj.content = form.content.data.strip()
+            article_obj.infobox_data = (form.infobox_data.data or '').strip()
+            article_obj.image_url = image_path
+            article_obj.tags = parsed_tags
+            article_obj.status = 'approved'
+            article_obj.approved_by = current_user.username
+            article_obj.approved_at = datetime.utcnow()
             flash('Article updated successfully.', 'success')
+        else:
+            save_or_replace_pending_revision(article_obj, form, parsed_tags, image_path)
+            flash('Article updated and sent for approval.', 'info')
 
         db.session.commit()
-        return redirect(article_public_url(article_obj))
+        if article_is_public(article_obj):
+            return redirect(article_public_url(article_obj))
+        return redirect(url_for('my_pages'))
 
     return render_template('create_article.html', form=form, is_edit=True, article=article_obj)
 
@@ -510,6 +787,41 @@ def dashboard_articles():
     )
 
 
+@app.route('/dashboard/updates')
+@role_required(['admin', 'writer'])
+def dashboard_updates():
+    search = (request.args.get('q') or '').strip()
+    sort = (request.args.get('sort') or 'newest').strip().lower()
+
+    sort_map = {
+        'newest': ArticleRevision.created_at.desc(),
+        'oldest': ArticleRevision.created_at.asc(),
+        'title_az': ArticleRevision.title.asc(),
+        'title_za': ArticleRevision.title.desc(),
+        'editor_az': ArticleRevision.editor.asc(),
+        'editor_za': ArticleRevision.editor.desc(),
+    }
+    revisions = ArticleRevision.query.filter_by(status='pending').order_by(
+        sort_map.get(sort, ArticleRevision.created_at.desc())
+    ).all()
+    if search:
+        revisions = [revision for revision in revisions if revision_matches_search(revision, search)]
+
+    article_links = {
+        revision.article.id: article_public_url(revision.article)
+        for revision in revisions
+        if revision.article
+    }
+
+    return render_template(
+        'dashboard_updates.html',
+        pending_revisions=revisions,
+        article_links=article_links,
+        search=search,
+        sort=sort,
+    )
+
+
 @app.route('/set-role/<int:user_id>', methods=['POST'])
 @role_required(['admin'])
 def set_role(user_id):
@@ -566,9 +878,16 @@ def approve(article_id):
         flash('Cannot approve archived article.', 'danger')
         return redirect(url_for('dashboard_articles'))
 
-    article_obj.status = 'approved'
-    article_obj.approved_by = current_user.username
-    article_obj.approved_at = datetime.utcnow()
+    pending_revision = ArticleRevision.query.filter_by(
+        article_id=article_obj.id,
+        status='pending',
+    ).order_by(ArticleRevision.created_at.desc()).first()
+    if pending_revision:
+        apply_revision(pending_revision)
+    else:
+        article_obj.status = 'approved'
+        article_obj.approved_by = current_user.username
+        article_obj.approved_at = datetime.utcnow()
     db.session.commit()
     flash(f'Approved article: {article_obj.title}', 'success')
     return redirect(url_for('dashboard_articles'))
@@ -590,6 +909,35 @@ def decline(article_id):
     return redirect(url_for('dashboard_articles'))
 
 
+@app.route('/revisions/<int:revision_id>/approve', methods=['POST'])
+@role_required(['admin'])
+def approve_revision(revision_id):
+    revision = ArticleRevision.query.get_or_404(revision_id)
+    duplicate = Article.query.filter(
+        Article.title == revision.title,
+        Article.id != revision.article_id,
+    ).first()
+    if duplicate:
+        flash('Cannot approve update because another article already uses that title.', 'danger')
+        return redirect(url_for('dashboard_updates'))
+
+    article_obj = apply_revision(revision)
+    db.session.commit()
+    flash(f'Approved update for article: {article_obj.title}', 'success')
+    return redirect(url_for('dashboard_updates'))
+
+
+@app.route('/revisions/<int:revision_id>/decline', methods=['POST'])
+@role_required(['admin'])
+def decline_revision(revision_id):
+    revision = ArticleRevision.query.get_or_404(revision_id)
+    title = revision.article.title
+    db.session.delete(revision)
+    db.session.commit()
+    flash(f'Discarded pending update for article: {title}', 'warning')
+    return redirect(url_for('dashboard_updates'))
+
+
 @app.route('/articles/<int:article_id>/toggle-archive', methods=['POST'])
 @role_required(['admin'])
 def toggle_archive_article(article_id):
@@ -601,9 +949,30 @@ def toggle_archive_article(article_id):
     return redirect(url_for('dashboard_articles'))
 
 
+@app.route('/articles/<int:article_id>/archive-own', methods=['POST'])
+@login_required
+def archive_own_article(article_id):
+    article_obj = Article.query.get_or_404(article_id)
+    if article_obj.author != current_user.username:
+        abort(403)
+    if article_obj.is_archived:
+        flash('This article is already archived.', 'info')
+        return redirect(url_for('my_pages'))
+
+    ArticleRevision.query.filter_by(article_id=article_obj.id, status='pending').delete()
+    article_obj.is_archived = True
+    article_obj.archived_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'Archived article: {article_obj.title}', 'info')
+    return redirect(url_for('my_pages'))
+
+
 @app.route('/article/<article_title>')
 def article(article_title):
     article_obj = Article.query.filter_by(title=article_title, is_archived=False).first_or_404()
+    if not can_open_article(article_obj):
+        flash('That article is not public yet.', 'warning')
+        return redirect(url_for('articles'))
     if article_has_tag(article_obj, static_page_tag('about-us')):
         return redirect(url_for('about'))
     return render_article_page(article_obj)

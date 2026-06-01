@@ -58,7 +58,13 @@
                     <tr>
                         <td>{{ user.id }}</td>
                         <td>{{ user.username }}{% if user.username == "MainAdmin" %} <span class="badge bg-warning text-dark">Main</span>{% endif %}</td>
-                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.username == "MainAdmin" %}
+                                <span class="text-muted">Hidden</span>
+                            {% else %}
+                                {{ user.email }}
+                            {% endif %}
+                        </td>
                         <td>
                             {% if user.role == "admin" %}
                             <span class="badge bg-danger">admin</span>

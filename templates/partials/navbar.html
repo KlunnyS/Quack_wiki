@@ -32,13 +32,17 @@
                 {% if current_user.is_authenticated %}
                 <li class="nav-item dropdown ms-lg-3">
                     <a class="profile-trigger" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% if current_user.profile_image_url %}
+                        <img class="profile-avatar profile-avatar-img" src="{{ url_for('static', filename='img/' ~ current_user.profile_image_url) }}" alt="{{ current_user.username }} profile picture">
+                        {% else %}
                         <span class="profile-avatar">{{ current_user.username[0]|upper }}</span>
+                        {% endif %}
                         <span class="profile-name">{{ current_user.username }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('index') }}">Profile</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('index') }}">Settings</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('index') }}">My Pages</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('public_profile', username=current_user.username) }}">Profile</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('profile', _anchor='settings') }}">Settings</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('my_pages') }}">My Pages</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">Logout</a></li>
                     </ul>

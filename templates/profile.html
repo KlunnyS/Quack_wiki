@@ -1,0 +1,92 @@
+{% extends "_base.html" %}
+
+{% block title %}Profile - Quack Wiki{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <header class="article-header mb-4">
+        <h1 class="article-title">Profile</h1>
+        <p class="article-meta mb-0">Manage your name, profile picture, and password.</p>
+    </header>
+
+    <div class="row g-4 justify-content-center">
+        <div class="col-lg-7 col-xl-6">
+            <section class="card p-4 h-100">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    {% if current_user.profile_image_url %}
+                    <img class="profile-page-avatar" src="{{ url_for('static', filename='img/' ~ current_user.profile_image_url) }}" alt="{{ current_user.username }} profile picture">
+                    {% else %}
+                    <div class="profile-page-avatar profile-page-avatar-fallback">{{ current_user.username[0]|upper }}</div>
+                    {% endif %}
+                    <div>
+                        <h4 class="mb-1">{{ current_user.username }}</h4>
+                        <p class="article-meta mb-0">{{ current_user.role|capitalize }}</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data" class="mb-4">
+                    {{ profile_form.hidden_tag() }}
+                    <input type="hidden" name="form_type" value="profile">
+                    <div class="mb-3">
+                        {{ profile_form.username.label(class="form-label") }}
+                        {{ profile_form.username(class="form-control bg-dark text-light border-secondary") }}
+                        {% if profile_form.username.errors %}
+                            <div class="text-danger small">{{ profile_form.username.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ profile_form.public_display_name.label(class="form-label") }}
+                        {{ profile_form.public_display_name(class="form-control bg-dark text-light border-secondary", placeholder="Shown on your public author profile") }}
+                        {% if profile_form.public_display_name.errors %}
+                            <div class="text-danger small">{{ profile_form.public_display_name.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ profile_form.public_bio.label(class="form-label") }}
+                        {{ profile_form.public_bio(class="form-control bg-dark text-light border-secondary", rows="4", placeholder="Tell readers a little about you") }}
+                        {% if profile_form.public_bio.errors %}
+                            <div class="text-danger small">{{ profile_form.public_bio.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ profile_form.profile_image.label(class="form-label") }}
+                        {{ profile_form.profile_image(class="form-control bg-dark text-light border-secondary") }}
+                        {% if profile_form.profile_image.errors %}
+                            <div class="text-danger small">{{ profile_form.profile_image.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    {{ profile_form.submit(class="btn btn-brand") }}
+                </form>
+
+                <form method="POST" action="{{ url_for('profile', _anchor='settings') }}">
+                    {{ password_form.hidden_tag() }}
+                    <input type="hidden" name="form_type" value="password">
+                    <h5 class="mb-3">Change password</h5>
+                    <div class="mb-3">
+                        {{ password_form.current_password.label(class="form-label") }}
+                        {{ password_form.current_password(class="form-control bg-dark text-light border-secondary") }}
+                        {% if password_form.current_password.errors %}
+                            <div class="text-danger small">{{ password_form.current_password.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ password_form.password.label(class="form-label") }}
+                        {{ password_form.password(class="form-control bg-dark text-light border-secondary") }}
+                        {% if password_form.password.errors %}
+                            <div class="text-danger small">{{ password_form.password.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ password_form.confirm_password.label(class="form-label") }}
+                        {{ password_form.confirm_password(class="form-control bg-dark text-light border-secondary") }}
+                        {% if password_form.confirm_password.errors %}
+                            <div class="text-danger small">{{ password_form.confirm_password.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    {{ password_form.submit(class="btn btn-outline-light") }}
+                </form>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

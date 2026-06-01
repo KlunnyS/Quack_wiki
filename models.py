@@ -12,6 +12,9 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(120), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    profile_image_url = db.Column(db.String(120), nullable=True)
+    public_display_name = db.Column(db.String(80), nullable=True)
+    public_bio = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     role = db.Column(db.String(30), default='user')
     is_archived = db.Column(db.Boolean, default=False, nullable=False)
@@ -39,3 +42,18 @@ class Article(db.Model):
     approved_at = db.Column(db.DateTime, nullable=True)
     is_archived = db.Column(db.Boolean, default=False, nullable=False)
     archived_at = db.Column(db.DateTime, nullable=True)
+
+
+class ArticleRevision(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+    editor = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    title = db.Column(db.String(120), nullable=False)
+    summary = db.Column(db.Text)
+    content = db.Column(db.Text, nullable=False)
+    infobox_data = db.Column(db.Text, nullable=True)
+    image_url = db.Column(db.String(120), default='default.png')
+    tags = db.Column(db.JSON, default=list)
+    status = db.Column(db.String(20), default='pending', nullable=False)
+    article = db.relationship('Article', backref=db.backref('revisions', lazy=True))
