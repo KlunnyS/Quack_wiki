@@ -218,8 +218,11 @@ a {
 .my-page-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 0.75rem;
+}
+
+.my-page-card-top {
+    justify-content: space-between;
 }
 
 .my-page-title {
@@ -251,12 +254,14 @@ a {
 }
 
 .my-page-actions {
+    flex-wrap: wrap;
     justify-content: flex-end;
     margin-top: 1rem;
 }
 
 .my-page-actions .btn {
     min-width: 86px;
+    white-space: nowrap;
 }
 
 .my-page-actions form {
@@ -286,6 +291,18 @@ a {
 .my-page-status-declined {
     color: #ffb8b8;
     background: rgba(255, 98, 98, 0.16);
+}
+
+.my-page-status-archived {
+    color: #d8deea;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.my-pages-archive-check {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
 }
 
 .my-pages-empty {

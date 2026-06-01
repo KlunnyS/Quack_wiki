@@ -517,9 +517,12 @@ def profile():
 def my_pages():
     search = (request.args.get('q') or '').strip()
     status_filter = (request.args.get('status') or 'all').strip().lower()
+    show_archived = request.args.get('show_archived') == '1'
     sort = (request.args.get('sort') or 'newest').strip().lower()
 
-    query = Article.query.filter_by(author=current_user.username, is_archived=False)
+    query = Article.query.filter_by(author=current_user.username)
+    if not show_archived:
+        query = query.filter(Article.is_archived.is_(False))
     if status_filter in {'pending', 'approved', 'declined'}:
         query = query.filter(Article.status == status_filter)
 
@@ -542,6 +545,7 @@ def my_pages():
         article_links=article_links,
         search=search,
         status_filter=status_filter,
+        show_archived=show_archived,
         sort=sort,
     )
 
@@ -955,15 +959,13 @@ def archive_own_article(article_id):
     article_obj = Article.query.get_or_404(article_id)
     if article_obj.author != current_user.username:
         abort(403)
-    if article_obj.is_archived:
-        flash('This article is already archived.', 'info')
-        return redirect(url_for('my_pages'))
 
-    ArticleRevision.query.filter_by(article_id=article_obj.id, status='pending').delete()
-    article_obj.is_archived = True
-    article_obj.archived_at = datetime.utcnow()
+    if not article_obj.is_archived:
+        ArticleRevision.query.filter_by(article_id=article_obj.id, status='pending').delete()
+    article_obj.is_archived = not article_obj.is_archived
+    article_obj.archived_at = datetime.utcnow() if article_obj.is_archived else None
     db.session.commit()
-    flash(f'Archived article: {article_obj.title}', 'info')
+    flash(f"Article {'archived' if article_obj.is_archived else 'restored'}: {article_obj.title}", 'info')
     return redirect(url_for('my_pages'))
 
 
