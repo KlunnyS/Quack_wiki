@@ -1,0 +1,52 @@
+{% extends "_base.html" %}
+
+{% block title %}Site Settings - Quack Wiki{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <section class="card p-4 dashboard-settings-card">
+        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+            <div>
+                <h4 class="mb-1">Site Settings</h4>
+                <p class="article-meta mb-0">Configure the Community Game Wiki banner.</p>
+            </div>
+            <a class="btn btn-outline-light align-self-lg-start" href="{{ url_for('index') }}">View Home</a>
+        </div>
+
+        {% if settings.hero_image_url %}
+        <div class="dashboard-banner-preview mb-4">
+            <img src="{{ url_for('static', filename='img/' ~ settings.hero_image_url) }}" alt="Current community banner">
+        </div>
+        {% else %}
+        <div class="dashboard-banner-empty mb-4">No banner image configured yet.</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('dashboard_settings') }}" enctype="multipart/form-data" class="mb-3">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.hero_image.label(class="form-label") }}
+                {{ form.hero_image(class="form-control bg-dark text-light border-secondary") }}
+                {% if form.hero_image.errors %}
+                    <div class="text-danger small">{{ form.hero_image.errors[0] }}</div>
+                {% endif %}
+                <div class="form-text text-muted">Recommended: wide image, at least 1400 x 420px.</div>
+            </div>
+            {{ form.submit(class="btn btn-brand") }}
+        </form>
+
+        <div class="dashboard-danger-zone mt-4">
+            <div>
+                <h5 class="mb-1">Remove banner image</h5>
+                <p class="article-meta mb-0">This restores the default gradient banner on the home page.</p>
+            </div>
+            {% if settings.hero_image_url %}
+            <form method="POST" action="{{ url_for('remove_hero_banner') }}">
+                <button class="btn btn-outline-warning" type="submit">Remove Image</button>
+            </form>
+            {% else %}
+            <button class="btn btn-outline-secondary" type="button" disabled>No Image Set</button>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

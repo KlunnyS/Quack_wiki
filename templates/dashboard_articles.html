@@ -63,7 +63,14 @@
                         <td>
                             <a href="{{ article_links[article.id] }}">{{ article.title }}</a>
                         </td>
-                        <td>{{ article.author }}</td>
+                        <td>
+                            {% set author_user = author_users.get(article.author) %}
+                            {% if author_user %}
+                            <a href="{{ url_for('public_profile', username=author_user.username) }}">{{ author_user.public_display_name or author_user.username }}</a>
+                            {% else %}
+                            {{ article.author }}
+                            {% endif %}
+                        </td>
                         <td>
                             {% if article.status == 'approved' %}
                             <span class="badge bg-success">approved</span>

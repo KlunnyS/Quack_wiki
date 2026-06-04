@@ -13,8 +13,8 @@ from sqlalchemy import text
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
 
-from forms import ArticleForm, LoginForm, PasswordChangeForm, ProfileForm, RegisterForm, RoleForm
-from models import Article, ArticleRevision, User, db
+from forms import ArticleForm, LoginForm, PasswordChangeForm, ProfileForm, RegisterForm, RoleForm, SiteSettingsForm
+from models import Article, ArticleRevision, SiteSettings, User, db
 from seed import seed_admin
 
 app = Flask(__name__)
@@ -23,6 +23,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pages.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/img/upload'
 app.config['PROFILE_UPLOAD_FOLDER'] = 'static/img/profile'
+app.config['SITE_UPLOAD_FOLDER'] = 'static/img/site'
 
 db.init_app(app)
 
@@ -40,11 +41,22 @@ def ensure_user_profile_columns():
         db.session.commit()
 
 
+def get_site_settings():
+    settings = SiteSettings.query.get(1)
+    if not settings:
+        settings = SiteSettings(id=1)
+        db.session.add(settings)
+        db.session.commit()
+    return settings
+
+
 with app.app_context():
     db.create_all()
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['PROFILE_UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['SITE_UPLOAD_FOLDER'], exist_ok=True)
     ensure_user_profile_columns()
+    get_site_settings()
     seed_admin()
 
 login_manager = LoginManager()
@@ -52,9 +64,17 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 
+@app.context_processor
+def inject_site_settings():
+    return {'site_settings': get_site_settings()}
+
+
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    user = User.query.get(int(user_id))
+    if user and user.is_archived:
+        return None
+    return user
 
 
 def role_required(role_names: list):
@@ -203,7 +223,10 @@ def article_public_url(article_obj: Article) -> str:
 
 
 def article_is_public(article_obj: Article) -> bool:
-    return article_obj and not article_obj.is_archived and article_obj.status == 'approved'
+    if not article_obj or article_obj.is_archived or article_obj.status != 'approved':
+        return False
+    author = User.query.filter_by(username=article_obj.author).first()
+    return bool(author and not author.is_archived)
 
 
 def can_open_article(article_obj: Article) -> bool:
@@ -233,6 +256,22 @@ def article_matches_search(article_obj: Article, search: str) -> bool:
     return any(needle in value.lower() for value in fields + tags)
 
 
+def users_by_username(usernames):
+    cleaned_usernames = {username for username in usernames if username}
+    if not cleaned_usernames:
+        return {}
+    users = User.query.filter(User.username.in_(cleaned_usernames)).all()
+    return {user.username: user for user in users}
+
+
+def active_users_by_username(usernames):
+    return {
+        username: user
+        for username, user in users_by_username(usernames).items()
+        if not user.is_archived
+    }
+
+
 def revision_matches_search(revision: ArticleRevision, search: str) -> bool:
     needle = search.strip().lower()
     if not needle:
@@ -255,7 +294,11 @@ def find_published_article_by_tag(tag_name: str):
         func.lower(func.trim(Article.status)) == 'approved',
     ).order_by(Article.created_at.desc()).all()
     return next(
-        (article_obj for article_obj in candidates if article_has_tag(article_obj, page_tag)),
+        (
+            article_obj
+            for article_obj in candidates
+            if article_is_public(article_obj) and article_has_tag(article_obj, page_tag)
+        ),
         None,
     )
 
@@ -332,6 +375,22 @@ def save_profile_image(file_storage):
     os.makedirs(upload_dir, exist_ok=True)
     file_storage.save(os.path.join(upload_dir, filename))
     return f"profile/{filename}"
+
+
+def save_site_image(file_storage):
+    if not file_storage or not file_storage.filename:
+        return None
+
+    safe_name = secure_filename(file_storage.filename)
+    if not safe_name:
+        return None
+
+    _, ext = os.path.splitext(safe_name)
+    filename = f"{uuid4().hex}{ext.lower()}"
+    upload_dir = app.config['SITE_UPLOAD_FOLDER']
+    os.makedirs(upload_dir, exist_ok=True)
+    file_storage.save(os.path.join(upload_dir, filename))
+    return f"site/{filename}"
 
 
 def sync_username_references(old_username: str, new_username: str):
@@ -445,6 +504,9 @@ def login():
         elif not check_password_hash(user.password_hash, form.password.data):
             error = 'Incorrect password.'
             flash(error, 'danger')
+        elif user.is_archived:
+            error = 'This account is deactivated.'
+            flash(error, 'danger')
         else:
             login_user(user)
             flash('Logged in successfully.', 'success')
@@ -552,7 +614,9 @@ def my_pages():
 
 @app.route('/authors/<username>')
 def public_profile(username):
-    user = User.query.filter_by(username=username, is_archived=False).first_or_404()
+    user = User.query.filter_by(username=username).first_or_404()
+    if user.is_archived:
+        abort(404)
     articles = Article.query.filter_by(
         author=user.username,
         status='approved',
@@ -598,10 +662,18 @@ def articles():
         func.lower(func.trim(Article.status)) == 'approved',
     )
     article_list = query.order_by(Article.created_at.desc()).all()
+    article_list = [article_obj for article_obj in article_list if article_is_public(article_obj)]
     if search:
         article_list = [article_obj for article_obj in article_list if article_matches_search(article_obj, search)]
     article_links = {article.id: article_public_url(article) for article in article_list}
-    return render_template('articles.html', articles=article_list, search=search, article_links=article_links)
+    author_users = active_users_by_username(article.author for article in article_list)
+    return render_template(
+        'articles.html',
+        articles=article_list,
+        search=search,
+        article_links=article_links,
+        author_users=author_users,
+    )
 
 
 @app.route('/articles/new', methods=['GET', 'POST'])
@@ -779,11 +851,13 @@ def dashboard_articles():
     if search:
         articles = [article_obj for article_obj in articles if article_matches_search(article_obj, search)]
     article_links = {article_obj.id: article_public_url(article_obj) for article_obj in articles}
+    author_users = active_users_by_username(article_obj.author for article_obj in articles)
 
     return render_template(
         'dashboard_articles.html',
         articles=articles,
         article_links=article_links,
+        author_users=author_users,
         search=search,
         status_filter=status_filter,
         show_archived=show_archived,
@@ -824,6 +898,35 @@ def dashboard_updates():
         search=search,
         sort=sort,
     )
+
+
+@app.route('/dashboard/settings', methods=['GET', 'POST'])
+@role_required(['admin'])
+def dashboard_settings():
+    settings = get_site_settings()
+    form = SiteSettingsForm()
+
+    if form.validate_on_submit():
+        image_path = save_site_image(form.hero_image.data)
+        if image_path:
+            settings.hero_image_url = image_path
+            db.session.commit()
+            flash('Community banner image updated.', 'success')
+        else:
+            flash('Choose an image before saving.', 'warning')
+        return redirect(url_for('dashboard_settings'))
+
+    return render_template('dashboard_settings.html', form=form, settings=settings)
+
+
+@app.route('/dashboard/settings/banner/remove', methods=['POST'])
+@role_required(['admin'])
+def remove_hero_banner():
+    settings = get_site_settings()
+    settings.hero_image_url = None
+    db.session.commit()
+    flash('Community banner image removed.', 'info')
+    return redirect(url_for('dashboard_settings'))
 
 
 @app.route('/set-role/<int:user_id>', methods=['POST'])

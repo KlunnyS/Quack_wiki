@@ -21,6 +21,7 @@
                     <div>
                         <h4 class="mb-1">{{ current_user.username }}</h4>
                         <p class="article-meta mb-0">{{ current_user.role|capitalize }}</p>
+                        <a class="btn btn-outline-light btn-sm mt-2" href="{{ url_for('public_profile', username=current_user.username) }}">View Public Profile</a>
                     </div>
                 </div>
 

@@ -11,7 +11,12 @@
         <div class="author-avatar author-avatar-fallback">{{ profile_user.username[0]|upper }}</div>
         {% endif %}
         <div>
-            <p class="article-meta mb-1">{{ profile_user.role|capitalize }} Author</p>
+            <p class="article-meta mb-1">
+                {{ profile_user.role|capitalize }} Author
+                {% if profile_user.is_archived %}
+                <span class="badge bg-secondary ms-2">Archived</span>
+                {% endif %}
+            </p>
             <h1 class="article-title mb-2">{{ profile_user.public_display_name or profile_user.username }}</h1>
             <p class="author-username mb-3">@{{ profile_user.username }}</p>
             <p class="author-bio mb-0">{{ profile_user.public_bio or "This author has not added a public bio yet." }}</p>

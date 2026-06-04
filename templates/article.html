@@ -68,9 +68,19 @@
                     {% endif %}
                 </div>
                 <div class="infobox-grid">
+                    <div class="infobox-label">Author</div>
+                    <div>
+                        {% if author_user %}
+                        <a href="{{ url_for('public_profile', username=author_user.username) }}">{{ author_user.public_display_name or author_user.username }}</a>
+                        {% else %}
+                        {{ article.author or "Unknown" }}
+                        {% endif %}
+                    </div>
                     {% for label, value in infobox_rows %}
+                    {% if label|lower != 'author' %}
                     <div class="infobox-label">{{ label }}</div>
                     <div>{{ value }}</div>
+                    {% endif %}
                     {% endfor %}
                 </div>
                 {% if article.tags %}
@@ -86,4 +96,3 @@
     </div>
 </div>
 {% endblock %}
-

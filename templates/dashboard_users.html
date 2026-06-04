@@ -57,7 +57,14 @@
                     {% for user in users %}
                     <tr>
                         <td>{{ user.id }}</td>
-                        <td>{{ user.username }}{% if user.username == "MainAdmin" %} <span class="badge bg-warning text-dark">Main</span>{% endif %}</td>
+                        <td>
+                            {% if user.is_archived %}
+                            <span class="text-muted">{{ user.username }}</span>
+                            {% else %}
+                            <a href="{{ url_for('public_profile', username=user.username) }}">{{ user.username }}</a>
+                            {% endif %}
+                            {% if user.username == "MainAdmin" %} <span class="badge bg-warning text-dark">Main</span>{% endif %}
+                        </td>
                         <td>
                             {% if user.username == "MainAdmin" %}
                                 <span class="text-muted">Hidden</span>

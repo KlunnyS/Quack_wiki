@@ -52,3 +52,9 @@ class ArticleForm(FlaskForm):
     ])
     tags = StringField("Tags (comma separated)")
     submit = SubmitField("Create Article")
+
+class SiteSettingsForm(FlaskForm):
+    hero_image = FileField("Community banner image", validators=[
+        FileAllowed(["jpg", "jpeg", "png", "gif", "webp"], "Images only.")
+    ])
+    submit = SubmitField("Save Settings")

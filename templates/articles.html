@@ -21,7 +21,16 @@
         <div class="col-12">
             <article class="card p-3">
                 <h4 class="mb-1"><a href="{{ article_links[article.id] }}">{{ article.title }}</a></h4>
-                <p class="article-meta mb-2">by <a href="{{ url_for('public_profile', username=article.author) }}">{{ article.author }}</a> | {{ article.created_at.strftime('%Y-%m-%d') if article.created_at else "Unknown date" }}</p>
+                <p class="article-meta mb-2">
+                    by
+                    {% set author_user = author_users.get(article.author) %}
+                    {% if author_user %}
+                    <a href="{{ url_for('public_profile', username=author_user.username) }}">{{ author_user.public_display_name or author_user.username }}</a>
+                    {% else %}
+                    {{ article.author }}
+                    {% endif %}
+                    | {{ article.created_at.strftime('%Y-%m-%d') if article.created_at else "Unknown date" }}
+                </p>
                 <p class="mb-0">{{ article.summary or "No summary available." }}</p>
             </article>
         </div>

@@ -4,7 +4,7 @@
 {% block title %}Home - Quack Wiki{% endblock %}
 
 {% block content %}
-<section class="hero mb-4">
+<section class="hero mb-4 {% if site_settings.hero_image_url %}hero-with-image{% endif %}"{% if site_settings.hero_image_url %} style="--hero-image: url('{{ url_for('static', filename='img/' ~ site_settings.hero_image_url) }}');"{% endif %}>
     <p class="hero-kicker">Community Game Wiki</p>
     <h1>QUACK</h1>
     <p class="hero-subtitle">Fast. Brutal. Puzzle Shooter.</p>
