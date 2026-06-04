@@ -47,6 +47,7 @@
                         <th>Username</th>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>Published</th>
                         <th>Created</th>
                         <th>Archived</th>
                         <th>Role Action</th>
@@ -81,6 +82,7 @@
                             <span class="badge bg-secondary">user</span>
                             {% endif %}
                         </td>
+                        <td>{{ published_counts.get(user.username, 0) }}</td>
                         <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</td>
                         <td>
                             {% if user.is_archived %}

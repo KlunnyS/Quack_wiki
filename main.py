@@ -812,11 +812,23 @@ def dashboard_users():
         'role_za': User.role.desc(),
     }
     users = query.order_by(sort_map.get(sort, User.created_at.desc())).all()
+    published_counts = {
+        username: count
+        for username, count in db.session.query(Article.author, func.count(Article.id))
+        .filter(
+            Article.author.in_([user.username for user in users]),
+            Article.is_archived.is_(False),
+            Article.status == 'approved',
+        )
+        .group_by(Article.author)
+        .all()
+    }
     role_form = RoleForm()
 
     return render_template(
         'dashboard_users.html',
         users=users,
+        published_counts=published_counts,
         role_form=role_form,
         search=search,
         role_filter=role_filter,
