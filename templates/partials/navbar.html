@@ -21,6 +21,10 @@
                 {% endif %}
             </ul>
 
+            <div class="mobile-sidebar-wrap d-lg-none">
+                {% include "partials/sidebar.html" %}
+            </div>
+
             <ul class="navbar-nav ms-auto align-items-lg-center nav-tools">
                 <li class="nav-item nav-search-wrap">
                     <form class="nav-search" method="GET" action="{{ url_for('articles') }}">
