@@ -17,6 +17,7 @@ from uuid import uuid4
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from sqlalchemy import text
+from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
 
@@ -24,15 +25,55 @@ from forms import ArticleForm, LoginForm, PasswordChangeForm, ProfileForm, Regis
 from models import Article, ArticleRevision, SiteSettings, User, db
 from seed import seed_admin
 
+MAX_UPLOAD_SIZE_MB = 5
+MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '#K0nMykvNSC3OyQcA'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pages.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_SIZE_BYTES
 app.config['UPLOAD_FOLDER'] = 'static/img/upload'
 app.config['PROFILE_UPLOAD_FOLDER'] = 'static/img/profile'
 app.config['SITE_UPLOAD_FOLDER'] = 'static/img/site'
 
 db.init_app(app)
+
+
+def cleanup_unused_images():
+    """Remove uploaded image files that are no longer referenced by the database."""
+    referenced_paths = {
+        image_path
+        for image_path, in db.session.query(Article.image_url).filter(Article.image_url.isnot(None)).all()
+    }
+    referenced_paths.update(
+        image_path
+        for image_path, in db.session.query(ArticleRevision.image_url).filter(ArticleRevision.image_url.isnot(None)).all()
+    )
+    referenced_paths.update(
+        image_path
+        for image_path, in db.session.query(User.profile_image_url).filter(User.profile_image_url.isnot(None)).all()
+    )
+    referenced_paths.update(
+        image_path
+        for image_path, in db.session.query(SiteSettings.hero_image_url).filter(SiteSettings.hero_image_url.isnot(None)).all()
+    )
+    referenced_paths.discard('default.png')
+
+    managed_dirs = {
+        'upload': app.config['UPLOAD_FOLDER'],
+        'profile': app.config['PROFILE_UPLOAD_FOLDER'],
+        'site': app.config['SITE_UPLOAD_FOLDER'],
+    }
+    for folder_key, folder_path in managed_dirs.items():
+        if not os.path.isdir(folder_path):
+            continue
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            if not os.path.isfile(file_path):
+                continue
+            if f"{folder_key}/{filename}" not in referenced_paths:
+                os.remove(file_path)
 
 
 def ensure_user_profile_columns():
@@ -68,10 +109,18 @@ with app.app_context():
     ensure_user_profile_columns()
     get_site_settings()
     seed_admin()
+    cleanup_unused_images()
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_upload_too_large(error):
+    """Show a friendly message when an upload exceeds the global request limit."""
+    flash(f'Upload is too large. Maximum file size is {MAX_UPLOAD_SIZE_MB} MB.', 'danger')
+    return redirect(request.referrer or url_for('index'))
 
 
 @app.context_processor
@@ -1105,8 +1154,9 @@ def set_role(user_id):
         if user.id == current_user.id:
             flash('You cannot change your own role.', 'danger')
             return redirect(url_for('dashboard_users'))
-        if user.role == 'admin' and current_user.username != 'MainAdmin':
-            flash('Only MainAdmin can change another admin role.', 'danger')
+        admin_role_changed = user.role == 'admin' or form.role.data == 'admin'
+        if admin_role_changed and current_user.username != 'MainAdmin':
+            flash('Only MainAdmin can add or remove admin role.', 'danger')
             return redirect(url_for('dashboard_users'))
 
         user.role = form.role.data

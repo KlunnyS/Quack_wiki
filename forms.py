@@ -1,9 +1,13 @@
 """WTForms definitions used by Quack Wiki routes."""
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileAllowed
+from flask_wtf.file import FileAllowed, FileSize
 from wtforms import FileField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
+
+MAX_IMAGE_UPLOAD_SIZE = 5 * 1024 * 1024
+IMAGE_UPLOAD_SIZE_MESSAGE = "Image must be 5 MB or smaller."
+IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"]
 
 
 class LoginForm(FlaskForm):
@@ -43,7 +47,8 @@ class ProfileForm(FlaskForm):
     public_display_name = StringField('Public display name', validators=[Length(max=80)])
     public_bio = TextAreaField('Public bio', validators=[Length(max=600)])
     profile_image = FileField('Profile picture', validators=[
-        FileAllowed(["jpg", "jpeg", "png", "gif", "webp"], "Images only.")
+        FileAllowed(IMAGE_EXTENSIONS, "Images only."),
+        FileSize(max_size=MAX_IMAGE_UPLOAD_SIZE, message=IMAGE_UPLOAD_SIZE_MESSAGE),
     ])
     submit = SubmitField('Save profile')
 
@@ -68,7 +73,8 @@ class ArticleForm(FlaskForm):
     content = TextAreaField("Content", validators=[DataRequired()])
     infobox_data = TextAreaField("Infobox Fields", validators=[Length(max=3000)])
     image_file = FileField("Picture", validators=[
-        FileAllowed(["jpg", "jpeg", "png", "gif", "webp"], "Images only.")
+        FileAllowed(IMAGE_EXTENSIONS, "Images only."),
+        FileSize(max_size=MAX_IMAGE_UPLOAD_SIZE, message=IMAGE_UPLOAD_SIZE_MESSAGE),
     ])
     tags = StringField("Tags (comma separated)")
     submit = SubmitField("Create Article")
@@ -78,6 +84,7 @@ class SiteSettingsForm(FlaskForm):
     """Admin form for updating site display settings."""
 
     hero_image = FileField("Community banner image", validators=[
-        FileAllowed(["jpg", "jpeg", "png", "gif", "webp"], "Images only.")
+        FileAllowed(IMAGE_EXTENSIONS, "Images only."),
+        FileSize(max_size=MAX_IMAGE_UPLOAD_SIZE, message=IMAGE_UPLOAD_SIZE_MESSAGE),
     ])
     submit = SubmitField("Save Settings")
