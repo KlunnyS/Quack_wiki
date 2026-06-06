@@ -1,3 +1,9 @@
+"""Main Flask application for Quack Wiki.
+
+This module owns app setup, public routes, dashboard routes, article rendering,
+file uploads, and small compatibility migrations for the SQLite database.
+"""
+
 from datetime import datetime
 import html
 import os
@@ -29,6 +35,7 @@ db.init_app(app)
 
 
 def ensure_user_profile_columns():
+    """Add profile columns to older SQLite databases created before profiles existed."""
     columns = db.session.execute(text("PRAGMA table_info(user)")).fetchall()
     column_names = {column[1] for column in columns}
     if 'profile_image_url' not in column_names:
@@ -42,6 +49,7 @@ def ensure_user_profile_columns():
 
 
 def get_site_settings():
+    """Return the singleton site settings row, creating it on first run."""
     settings = SiteSettings.query.get(1)
     if not settings:
         settings = SiteSettings(id=1)
@@ -51,6 +59,7 @@ def get_site_settings():
 
 
 with app.app_context():
+    # Startup bootstrap: create tables/folders and guarantee required seed data exists.
     db.create_all()
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['PROFILE_UPLOAD_FOLDER'], exist_ok=True)
@@ -66,11 +75,13 @@ login_manager.login_view = 'login'
 
 @app.context_processor
 def inject_site_settings():
+    """Expose site-wide settings to every template render."""
     return {'site_settings': get_site_settings()}
 
 
 @login_manager.user_loader
 def load_user(user_id):
+    """Load active users for Flask-Login sessions."""
     user = User.query.get(int(user_id))
     if user and user.is_archived:
         return None
@@ -78,6 +89,7 @@ def load_user(user_id):
 
 
 def role_required(role_names: list):
+    """Route decorator for pages that require one of the provided roles."""
     def decorator(func):
         @wraps(func)
         @login_required
@@ -92,6 +104,7 @@ def role_required(role_names: list):
 
 
 def _inline_markdown(text: str) -> str:
+    """Render the small inline markdown subset used in article content."""
     code_spans = []
 
     def stash_code(match):
@@ -114,6 +127,7 @@ def _inline_markdown(text: str) -> str:
 
 
 def render_simple_markdown(raw_text: str) -> str:
+    """Render a safe, limited markdown subset without accepting raw HTML."""
     if not raw_text:
         return '<p>No content yet.</p>'
 
@@ -217,12 +231,14 @@ def render_simple_markdown(raw_text: str) -> str:
 
 
 def article_public_url(article_obj: Article) -> str:
+    """Resolve the public URL for normal articles and reserved static-page tags."""
     if article_has_tag(article_obj, static_page_tag('about-us')):
         return url_for('about')
     return url_for('article', article_title=article_obj.title)
 
 
 def article_is_public(article_obj: Article) -> bool:
+    """Public articles must be approved, not archived, and written by an active user."""
     if not article_obj or article_obj.is_archived or article_obj.status != 'approved':
         return False
     author = User.query.filter_by(username=article_obj.author).first()
@@ -234,15 +250,18 @@ def can_open_article(article_obj: Article) -> bool:
 
 
 def static_page_tag(page_key: str) -> str:
+    """Normalize a named static page into its reserved article tag."""
     return f"page:{page_key.strip().lower()}"
 
 
 def article_has_tag(article_obj: Article, tag_name: str) -> bool:
+    """Case-insensitive tag lookup for article tag lists."""
     wanted = tag_name.strip().lower()
     return any(str(tag).strip().lower() == wanted for tag in (article_obj.tags or []))
 
 
 def article_matches_search(article_obj: Article, search: str) -> bool:
+    """Match article search against public article fields and tags."""
     needle = search.strip().lower()
     if not needle:
         return True
@@ -256,7 +275,23 @@ def article_matches_search(article_obj: Article, search: str) -> bool:
     return any(needle in value.lower() for value in fields + tags)
 
 
+def user_matches_public_search(user: User, search: str) -> bool:
+    """Match account search against public fields only; email stays private."""
+    needle = search.strip().lower()
+    if not needle:
+        return True
+
+    fields = [
+        user.username or '',
+        user.public_display_name or '',
+        user.public_bio or '',
+        user.role or '',
+    ]
+    return any(needle in value.lower() for value in fields)
+
+
 def users_by_username(usernames):
+    """Return users keyed by username for display helpers."""
     cleaned_usernames = {username for username in usernames if username}
     if not cleaned_usernames:
         return {}
@@ -265,6 +300,7 @@ def users_by_username(usernames):
 
 
 def active_users_by_username(usernames):
+    """Return only non-archived users from a username collection."""
     return {
         username: user
         for username, user in users_by_username(usernames).items()
@@ -273,6 +309,7 @@ def active_users_by_username(usernames):
 
 
 def revision_matches_search(revision: ArticleRevision, search: str) -> bool:
+    """Match dashboard revision search against revision metadata and tags."""
     needle = search.strip().lower()
     if not needle:
         return True
@@ -288,6 +325,7 @@ def revision_matches_search(revision: ArticleRevision, search: str) -> bool:
 
 
 def find_published_article_by_tag(tag_name: str):
+    """Find the newest public article that owns a reserved page tag."""
     page_tag = static_page_tag(tag_name)
     candidates = Article.query.filter(
         Article.is_archived.is_(False),
@@ -304,6 +342,7 @@ def find_published_article_by_tag(tag_name: str):
 
 
 def normalize_article_tags(raw_tags: str):
+    """Normalize comma-separated tags and protect reserved page:* tags."""
     tags = []
     removed_reserved = False
     can_use_reserved = current_user.is_authenticated and current_user.role in ['admin', 'writer']
@@ -322,6 +361,7 @@ def normalize_article_tags(raw_tags: str):
 
 
 def can_edit_article(article_obj: Article) -> bool:
+    """Apply edit permissions for admins, writers, and article owners."""
     if not current_user.is_authenticated:
         return False
     if article_obj.is_archived:
@@ -332,6 +372,7 @@ def can_edit_article(article_obj: Article) -> bool:
 
 
 def parse_infobox_data(raw_data: str):
+    """Parse simple 'Label: Value' lines into infobox rows."""
     rows = []
     for raw_line in (raw_data or '').splitlines():
         line = raw_line.strip()
@@ -346,6 +387,7 @@ def parse_infobox_data(raw_data: str):
 
 
 def save_article_image(file_storage):
+    """Store an uploaded article image and return its static/img-relative path."""
     if not file_storage or not file_storage.filename:
         return None
 
@@ -362,6 +404,7 @@ def save_article_image(file_storage):
 
 
 def save_profile_image(file_storage):
+    """Store an uploaded profile image and return its static/img-relative path."""
     if not file_storage or not file_storage.filename:
         return None
 
@@ -378,6 +421,7 @@ def save_profile_image(file_storage):
 
 
 def save_site_image(file_storage):
+    """Store an uploaded site image and return its static/img-relative path."""
     if not file_storage or not file_storage.filename:
         return None
 
@@ -394,6 +438,7 @@ def save_site_image(file_storage):
 
 
 def sync_username_references(old_username: str, new_username: str):
+    """Keep article ownership and approval references valid after username edits."""
     if old_username == new_username:
         return
 
@@ -403,6 +448,7 @@ def sync_username_references(old_username: str, new_username: str):
 
 
 def save_or_replace_pending_revision(article_obj, form, parsed_tags, image_path):
+    """Keep a single pending revision per article until review."""
     revision = ArticleRevision.query.filter_by(
         article_id=article_obj.id,
         status='pending',
@@ -424,6 +470,7 @@ def save_or_replace_pending_revision(article_obj, form, parsed_tags, image_path)
 
 
 def apply_revision(revision):
+    """Promote a pending revision into the live article record."""
     article_obj = revision.article
     article_obj.title = revision.title
     article_obj.summary = revision.summary
@@ -439,6 +486,7 @@ def apply_revision(revision):
 
 
 def render_article_page(article_obj: Article):
+    """Build all derived data needed by the public article template."""
     rendered_content = render_simple_markdown(article_obj.content)
     infobox_rows = parse_infobox_data(article_obj.infobox_data)
     pending_revision = ArticleRevision.query.filter_by(
@@ -466,6 +514,7 @@ def render_article_page(article_obj: Article):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """Create a new active account after validating unique email and username."""
     form = RegisterForm()
 
     if form.validate_on_submit():
@@ -492,6 +541,7 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Authenticate active users by email and password."""
     form = LoginForm()
     error = None
 
@@ -518,6 +568,7 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    """End the current Flask-Login session."""
     logout_user()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('index'))
@@ -526,6 +577,7 @@ def logout():
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
+    """Let users edit public profile details or change their password."""
     profile_form = ProfileForm(obj=current_user)
     password_form = PasswordChangeForm()
 
@@ -577,6 +629,7 @@ def profile():
 @app.route('/my-pages')
 @login_required
 def my_pages():
+    """Show the current user's articles with local filters and sorting."""
     search = (request.args.get('q') or '').strip()
     status_filter = (request.args.get('status') or 'all').strip().lower()
     show_archived = request.args.get('show_archived') == '1'
@@ -612,8 +665,45 @@ def my_pages():
     )
 
 
+@app.route('/authors')
+def authors():
+    """Search public accounts; direct browsing shows only published authors."""
+    search = (request.args.get('q') or '').strip()
+    include_all_users = request.args.get('all') == '1'
+
+    published_counts_query = db.session.query(
+        Article.author,
+        func.count(Article.id),
+    ).filter(
+        Article.is_archived.is_(False),
+        Article.status == 'approved',
+    ).group_by(Article.author).all()
+    published_counts = {
+        username: count
+        for username, count in published_counts_query
+        if username
+    }
+
+    public_users_query = User.query.filter(User.is_archived.is_(False))
+    if not include_all_users:
+        public_users_query = public_users_query.filter(User.username.in_(list(published_counts.keys())))
+
+    public_users = public_users_query.order_by(User.username.asc()).all()
+    if search:
+        public_users = [user for user in public_users if user_matches_public_search(user, search)]
+
+    return render_template(
+        'authors.html',
+        users=public_users,
+        published_counts=published_counts,
+        search=search,
+        include_all_users=include_all_users,
+    )
+
+
 @app.route('/authors/<username>')
 def public_profile(username):
+    """Display one active user's public profile and approved articles."""
     user = User.query.filter_by(username=username).first_or_404()
     if user.is_archived:
         abort(404)
@@ -633,11 +723,22 @@ def public_profile(username):
 
 @app.route('/')
 def index():
+    """Render the home page."""
     return render_template('index.html')
+
+
+@app.route('/search')
+def site_search():
+    """Navbar search router: @queries search accounts, all others search articles."""
+    search = (request.args.get('q') or '').strip()
+    if search.startswith('@'):
+        return redirect(url_for('authors', q=search[1:].strip(), all='1'))
+    return redirect(url_for('articles', q=search))
 
 
 @app.route('/about')
 def about():
+    """Render the reserved About page if its backing article is published."""
     about_article = find_published_article_by_tag('about-us')
     if about_article:
         return render_article_page(about_article)
@@ -647,6 +748,7 @@ def about():
 
 @app.route('/wiki/<tag>')
 def tagged_article(tag):
+    """Render a reserved tag-backed page such as levels, weapons, or lore."""
     article_obj = find_published_article_by_tag(tag)
     if article_obj:
         return render_article_page(article_obj)
@@ -656,6 +758,7 @@ def tagged_article(tag):
 
 @app.route('/articles')
 def articles():
+    """Browse approved public articles with optional text search."""
     search = (request.args.get('q') or '').strip()
     query = Article.query.filter(
         Article.is_archived.is_(False),
@@ -679,6 +782,7 @@ def articles():
 @app.route('/articles/new', methods=['GET', 'POST'])
 @login_required
 def create_article():
+    """Create a new article draft owned by the current user."""
     form = ArticleForm()
 
     if form.validate_on_submit():
@@ -724,6 +828,7 @@ def create_article():
 @app.route('/articles/<int:article_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_article(article_id):
+    """Edit an article directly as admin or submit an update for review."""
     article_obj = Article.query.get_or_404(article_id)
     if article_obj.is_archived:
         flash('Archived articles cannot be edited.', 'warning')
@@ -783,12 +888,14 @@ def edit_article(article_id):
 @app.route('/dashboard')
 @role_required(['admin'])
 def dashboard():
+    """Redirect the generic dashboard URL to the admin user table."""
     return redirect(url_for('dashboard_users'))
 
 
 @app.route('/dashboard/users')
 @role_required(['admin'])
 def dashboard_users():
+    """Admin view for managing users, roles, and account archive state."""
     search = (request.args.get('q') or '').strip()
     role_filter = (request.args.get('role') or 'all').strip().lower()
     show_archived = request.args.get('show_archived') == '1'
@@ -840,6 +947,7 @@ def dashboard_users():
 @app.route('/dashboard/articles')
 @role_required(['admin', 'writer'])
 def dashboard_articles():
+    """Reviewer view for searching, approving, and archiving articles."""
     search = (request.args.get('q') or '').strip()
     status_filter = (request.args.get('status') or 'all').strip().lower()
     show_archived = request.args.get('show_archived') == '1'
@@ -880,6 +988,7 @@ def dashboard_articles():
 @app.route('/dashboard/updates')
 @role_required(['admin', 'writer'])
 def dashboard_updates():
+    """Reviewer view for pending article update submissions."""
     search = (request.args.get('q') or '').strip()
     sort = (request.args.get('sort') or 'newest').strip().lower()
 
@@ -915,6 +1024,7 @@ def dashboard_updates():
 @app.route('/dashboard/settings', methods=['GET', 'POST'])
 @role_required(['admin'])
 def dashboard_settings():
+    """Admin settings page for site-wide visual options."""
     settings = get_site_settings()
     form = SiteSettingsForm()
 
@@ -934,6 +1044,7 @@ def dashboard_settings():
 @app.route('/dashboard/settings/banner/remove', methods=['POST'])
 @role_required(['admin'])
 def remove_hero_banner():
+    """Remove the home page banner image from site settings."""
     settings = get_site_settings()
     settings.hero_image_url = None
     db.session.commit()
@@ -944,6 +1055,7 @@ def remove_hero_banner():
 @app.route('/set-role/<int:user_id>', methods=['POST'])
 @role_required(['admin'])
 def set_role(user_id):
+    """Change a user's role while protecting MainAdmin and admin boundaries."""
     form = RoleForm()
 
     if form.validate_on_submit():
@@ -971,6 +1083,7 @@ def set_role(user_id):
 @app.route('/users/<int:user_id>/toggle-archive', methods=['POST'])
 @role_required(['admin'])
 def toggle_archive_user(user_id):
+    """Deactivate or reactivate a user account from the admin dashboard."""
     user = User.query.get_or_404(user_id)
     if user.username == 'MainAdmin':
         flash('Cannot archive MainAdmin.', 'danger')
@@ -992,6 +1105,7 @@ def toggle_archive_user(user_id):
 @app.route('/approve/<int:article_id>', methods=['POST'])
 @role_required(['admin'])
 def approve(article_id):
+    """Approve a new article or apply its latest pending revision."""
     article_obj = Article.query.get_or_404(article_id)
     if article_obj.is_archived:
         flash('Cannot approve archived article.', 'danger')
@@ -1015,6 +1129,7 @@ def approve(article_id):
 @app.route('/decline/<int:article_id>', methods=['POST'])
 @role_required(['admin'])
 def decline(article_id):
+    """Mark an article submission as declined."""
     article_obj = Article.query.get_or_404(article_id)
     if article_obj.is_archived:
         flash('Cannot decline archived article.', 'danger')
@@ -1031,6 +1146,7 @@ def decline(article_id):
 @app.route('/revisions/<int:revision_id>/approve', methods=['POST'])
 @role_required(['admin'])
 def approve_revision(revision_id):
+    """Approve one pending revision after checking title uniqueness."""
     revision = ArticleRevision.query.get_or_404(revision_id)
     duplicate = Article.query.filter(
         Article.title == revision.title,
@@ -1049,6 +1165,7 @@ def approve_revision(revision_id):
 @app.route('/revisions/<int:revision_id>/decline', methods=['POST'])
 @role_required(['admin'])
 def decline_revision(revision_id):
+    """Delete a pending revision without changing the live article."""
     revision = ArticleRevision.query.get_or_404(revision_id)
     title = revision.article.title
     db.session.delete(revision)
@@ -1060,6 +1177,7 @@ def decline_revision(revision_id):
 @app.route('/articles/<int:article_id>/toggle-archive', methods=['POST'])
 @role_required(['admin'])
 def toggle_archive_article(article_id):
+    """Archive or restore any article from the reviewer dashboard."""
     article_obj = Article.query.get_or_404(article_id)
     article_obj.is_archived = not article_obj.is_archived
     article_obj.archived_at = datetime.utcnow() if article_obj.is_archived else None
@@ -1071,6 +1189,7 @@ def toggle_archive_article(article_id):
 @app.route('/articles/<int:article_id>/archive-own', methods=['POST'])
 @login_required
 def archive_own_article(article_id):
+    """Let article owners archive or restore their own articles."""
     article_obj = Article.query.get_or_404(article_id)
     if article_obj.author != current_user.username:
         abort(403)
@@ -1086,6 +1205,7 @@ def archive_own_article(article_id):
 
 @app.route('/article/<article_title>')
 def article(article_title):
+    """Render one public article by title."""
     article_obj = Article.query.filter_by(title=article_title, is_archived=False).first_or_404()
     if not can_open_article(article_obj):
         flash('That article is not public yet.', 'warning')

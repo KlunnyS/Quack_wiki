@@ -1,0 +1,58 @@
+{% extends "_base.html" %}
+
+{% block title %}Authors - Quack Wiki{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 article-wiki">
+    <header class="article-header mb-4">
+        <h1 class="article-title">{{ 'Public Accounts' if include_all_users else 'Authors' }}</h1>
+        <p class="article-meta mb-0">
+            {{ 'Search public Quack Wiki accounts.' if include_all_users else 'Search authors with published Quack Wiki pages.' }}
+        </p>
+    </header>
+
+    <form method="GET" action="{{ url_for('authors') }}" class="mb-4" style="max-width: 560px;">
+        {% if include_all_users %}
+        <input type="hidden" name="all" value="1">
+        {% endif %}
+        <div class="input-group">
+            <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search username, display name, bio, or role">
+            <button class="btn btn-brand" type="submit">Search</button>
+        </div>
+    </form>
+
+    <section class="authors-grid">
+        {% for user in users %}
+        <article class="author-card">
+            <div class="author-card-top">
+                {% if user.profile_image_url %}
+                <img class="author-card-avatar" src="{{ url_for('static', filename='img/' ~ user.profile_image_url) }}" alt="{{ user.username }} profile picture">
+                {% else %}
+                <div class="author-card-avatar author-card-avatar-fallback">{{ user.username[0]|upper }}</div>
+                {% endif %}
+                <div class="author-card-heading">
+                    <h3>{{ user.public_display_name or user.username }}</h3>
+                    <p>@{{ user.username }}</p>
+                </div>
+            </div>
+
+            {% set bio = user.public_bio or "This author has not added a public bio yet." %}
+            <p class="author-card-bio">{{ bio|truncate(150, true) }}</p>
+
+            <div class="author-card-meta">
+                <span>{{ user.role|capitalize }}</span>
+                <span>{{ published_counts.get(user.username, 0) }} public {{ 'page' if published_counts.get(user.username, 0) == 1 else 'pages' }}</span>
+            </div>
+
+            <div class="author-card-actions">
+                <a class="btn btn-outline-light btn-sm" href="{{ url_for('public_profile', username=user.username) }}">View Profile</a>
+            </div>
+        </article>
+        {% else %}
+        <div class="card p-4 authors-empty">
+            <p class="mb-0 text-muted">{{ 'No public accounts found.' if include_all_users else 'No published authors found.' }}</p>
+        </div>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

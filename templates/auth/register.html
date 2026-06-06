@@ -31,7 +31,12 @@
 
                         <div class="mb-3">
                             {{ form.password.label(class="form-label") }}
-                            {{ form.password(class="form-control bg-dark text-light border-secondary", placeholder="Enter password") }}
+                            <div class="input-group">
+                                {{ form.password(class="form-control bg-dark text-light border-secondary", placeholder="Enter password") }}
+                                <button class="btn btn-outline-secondary password-toggle" type="button" data-toggle-password data-target="password" aria-label="Show password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                             {% if form.password.errors %}
                                 <div class="text-danger small">{{ form.password.errors[0] }}</div>
                             {% endif %}
@@ -39,7 +44,12 @@
 
                         <div class="mb-3">
                             {{ form.confirm_password.label(class="form-label") }}
-                            {{ form.confirm_password(class="form-control bg-dark text-light border-secondary", placeholder="Confirm password") }}
+                            <div class="input-group">
+                                {{ form.confirm_password(class="form-control bg-dark text-light border-secondary", placeholder="Confirm password") }}
+                                <button class="btn btn-outline-secondary password-toggle" type="button" data-toggle-password data-target="confirm_password" aria-label="Show password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                             {% if form.confirm_password.errors %}
                                 <div class="text-danger small">{{ form.confirm_password.errors[0] }}</div>
                             {% endif %}

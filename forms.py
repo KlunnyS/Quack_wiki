@@ -1,14 +1,22 @@
+"""WTForms definitions used by Quack Wiki routes."""
+
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, FileField, SubmitField, PasswordField, IntegerField,HiddenField
-from wtforms.validators import DataRequired, Length, EqualTo, Email
 from flask_wtf.file import FileAllowed
+from wtforms import FileField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, Email, EqualTo, Length
+
 
 class LoginForm(FlaskForm):
+    """Email/password login form."""
+
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
 
+
 class RegisterForm(FlaskForm):
+    """Public account registration form."""
+
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=30)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
@@ -16,7 +24,10 @@ class RegisterForm(FlaskForm):
                                      validators=[DataRequired(), EqualTo('password', message='Passwords don\'t match')])
     submit = SubmitField('Register')
 
+
 class RoleForm(FlaskForm):
+    """Admin role assignment form."""
+
     role = SelectField("Role", choices=[
         ("user", "User"),
         ("writer", "Writer"),
@@ -24,7 +35,10 @@ class RoleForm(FlaskForm):
         ], validators=[DataRequired()])
     submit = SubmitField("Change")
 
+
 class ProfileForm(FlaskForm):
+    """User profile settings form."""
+
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=30)])
     public_display_name = StringField('Public display name', validators=[Length(max=80)])
     public_bio = TextAreaField('Public bio', validators=[Length(max=600)])
@@ -33,7 +47,10 @@ class ProfileForm(FlaskForm):
     ])
     submit = SubmitField('Save profile')
 
+
 class PasswordChangeForm(FlaskForm):
+    """Authenticated password change form."""
+
     current_password = PasswordField('Current password', validators=[DataRequired()])
     password = PasswordField('New password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField(
@@ -42,7 +59,10 @@ class PasswordChangeForm(FlaskForm):
     )
     submit = SubmitField('Change password')
 
+
 class ArticleForm(FlaskForm):
+    """Create/edit form for article content and metadata."""
+
     title = StringField("Title", validators=[DataRequired(), Length(min=3, max=120)])
     summary = TextAreaField("Summary", validators=[Length(max=1000)])
     content = TextAreaField("Content", validators=[DataRequired()])
@@ -53,7 +73,10 @@ class ArticleForm(FlaskForm):
     tags = StringField("Tags (comma separated)")
     submit = SubmitField("Create Article")
 
+
 class SiteSettingsForm(FlaskForm):
+    """Admin form for updating site display settings."""
+
     hero_image = FileField("Community banner image", validators=[
         FileAllowed(["jpg", "jpeg", "png", "gif", "webp"], "Images only.")
     ])

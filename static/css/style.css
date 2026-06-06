@@ -382,6 +382,101 @@ a {
     line-height: 1.65;
 }
 
+.authors-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.author-card {
+    display: flex;
+    min-height: 250px;
+    flex-direction: column;
+    padding: 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius);
+    background:
+        radial-gradient(circle at top right, rgba(44, 207, 159, 0.13), transparent 34%),
+        rgba(12, 18, 34, 0.78);
+    box-shadow: var(--shadow);
+}
+
+.author-card-top {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.85rem;
+    align-items: center;
+}
+
+.author-card-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.22);
+}
+
+.author-card-avatar-fallback {
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+}
+
+.author-card-heading {
+    min-width: 0;
+}
+
+.author-card-heading h3 {
+    margin: 0 0 0.18rem;
+    color: #fff;
+    font-size: 1.18rem;
+    overflow-wrap: anywhere;
+}
+
+.author-card-heading p,
+.author-card-bio {
+    color: var(--text-dim);
+}
+
+.author-card-heading p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.author-card-bio {
+    flex: 1;
+    margin: 1rem 0;
+    line-height: 1.55;
+}
+
+.author-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: auto;
+}
+
+.author-card-meta span {
+    padding: 0.24rem 0.5rem;
+    border-radius: 999px;
+    color: #dce7ff;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.8rem;
+}
+
+.author-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.authors-empty {
+    grid-column: 1 / -1;
+}
+
 .layout-shell {
     padding: var(--layout-top-pad) var(--layout-side-pad) 1.2rem;
     flex: 1 0 auto;
@@ -791,6 +886,19 @@ a {
     background: rgba(255, 255, 255, 0.14);
 }
 
+.password-toggle {
+    width: 46px;
+    color: #dbe6ff;
+    border-color: #6c757d;
+}
+
+.password-toggle:hover,
+.password-toggle:focus {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #8f9bab;
+}
+
 .image-placeholder {
     min-height: 180px;
     border-radius: 12px;
@@ -965,5 +1073,15 @@ a {
 
     .author-avatar {
         margin: 0 auto;
+    }
+
+    .authors-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .authors-grid {
+        grid-template-columns: 1fr;
     }
 }

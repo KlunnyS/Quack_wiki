@@ -1,13 +1,18 @@
-from flask_sqlalchemy import SQLAlchemy
+"""Database models for Quack Wiki."""
+
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
+
 from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 db = SQLAlchemy()
 
 
 class User(db.Model, UserMixin):
+    """Application account with login data, role, and public profile fields."""
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -21,13 +26,17 @@ class User(db.Model, UserMixin):
     archived_at = db.Column(db.DateTime, nullable=True)
 
     def set_password(self, password):
+        """Hash and store a new password."""
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
+        """Check a submitted password against the stored hash."""
         return check_password_hash(self.password_hash, password)
 
 
 class Article(db.Model):
+    """Live article record shown publicly after approval."""
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120), unique=True, nullable=False)
     author = db.Column(db.String(120), nullable=False)
@@ -45,6 +54,8 @@ class Article(db.Model):
 
 
 class ArticleRevision(db.Model):
+    """Pending article update awaiting reviewer approval."""
+
     id = db.Column(db.Integer, primary_key=True)
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
     editor = db.Column(db.String(120), nullable=False)
@@ -60,6 +71,8 @@ class ArticleRevision(db.Model):
 
 
 class SiteSettings(db.Model):
+    """Singleton table for site-wide display settings."""
+
     id = db.Column(db.Integer, primary_key=True)
     hero_image_url = db.Column(db.String(120), nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -1,24 +1,42 @@
+"""Local startup helper for Quack Wiki.
+
+The script creates a project virtual environment when needed, installs the
+runtime Flask dependencies, and starts the development server.
+"""
+
 import os
-import sys
+import socket
 import subprocess
-import shutil
+import sys
+
+
+HOST = "0.0.0.0"
+PORT = "5000"
+
+
+def get_lan_ip():
+    """Best-effort lookup for the LAN address other devices should use."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+    except OSError:
+        return "localhost"
 
 print("==========================================")
 print(" Spustanie Flask aplikacie (automaticky)")
 print("==========================================\n")
 
-# --- Presun do priecinka so suborom ---
-# Python skript sa automaticky spustí v aktuálnom priečinku
-# Ak chceš byť istejší:
+# Run all commands from the project directory, even when launched elsewhere.
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# --- Vytvor virtualne prostredie, ak neexistuje ---
+# Create the local virtual environment on first run.
 venv_path = ".venv"
 if not os.path.exists(venv_path):
     print("Vytvaram virtualne prostredie...")
     subprocess.check_call([sys.executable, "-m", "venv", venv_path])
 
-# --- Aktivacia v Python subprocess ---
+# Choose the virtualenv Python executable for the current platform.
 if os.name == "nt":
     python_bin = os.path.join(venv_path, "Scripts", "python.exe")
 else:
@@ -26,11 +44,11 @@ else:
 
 print("Aktivujem virtualne prostredie...")
 
-# --- Upgrade pip ---
+# Uncomment if the bundled pip version needs to be upgraded.
 # print("Aktualizujem pip...")
 # subprocess.check_call([python_bin, "-m", "pip", "install", "--upgrade", "pip"])
 
-# --- Kontrola a instalacia balickov ---
+# Ensure the packages imported by main.py/forms.py/models.py are installed.
 required_packages = [
     "flask",
     "flask-wtf",
@@ -47,17 +65,28 @@ for pkg in required_packages:
         print(f"Instalujem {pkg}...")
         subprocess.check_call([python_bin, "-m", "pip", "install", pkg])
 
-# --- Spustenie Flask aplikacie ---
+# Start Flask in debug mode for local development.
 print("\n==========================================")
 print("Spustam Flask aplikaciu...")
+print(f"Na tomto pocitaci otvor: http://127.0.0.1:{PORT}")
+print(f"Na inom zariadeni v rovnakej sieti otvor: http://{get_lan_ip()}:{PORT}")
 print("==========================================\n")
 
 env = os.environ.copy()
 env["FLASK_APP"] = "main.py"
 env["FLASK_ENV"] = "development"
 
-# Spustenie Flasku
-subprocess.check_call([python_bin, "-m", "flask", "run", "--debug"], env=env)
+subprocess.check_call([
+    python_bin,
+    "-m",
+    "flask",
+    "run",
+    "--debug",
+    "--host",
+    HOST,
+    "--port",
+    PORT,
+], env=env)
 
 print("\n==========================================")
 print("Flask server bol ukonceny.")

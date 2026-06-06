@@ -13,6 +13,7 @@
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Home</a></li>
                 <li class="nav-item">{{ tag_article_link('about-us', 'About', class_name='nav-link') }}</li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('articles') }}">Articles</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('authors') }}">Authors</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('create_article') }}">New Article</a></li>
                 {% if current_user.is_authenticated and current_user.role == "admin" %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard_users') }}">Dashboard</a></li>
@@ -27,8 +28,14 @@
 
             <ul class="navbar-nav ms-auto align-items-lg-center nav-tools">
                 <li class="nav-item nav-search-wrap">
-                    <form class="nav-search" method="GET" action="{{ url_for('articles') }}">
-                        <input class="form-control" type="search" name="q" value="{{ request.args.get('q', '') if request.endpoint == 'articles' else '' }}" placeholder="Search wiki">
+                    <form class="nav-search" method="GET" action="{{ url_for('site_search') }}">
+                        {% set nav_query = request.args.get('q', '') %}
+                        {% if request.endpoint == 'authors' and request.args.get('all') == '1' and nav_query %}
+                            {% set nav_query = '@' ~ nav_query %}
+                        {% elif request.endpoint not in ['articles', 'authors'] %}
+                            {% set nav_query = '' %}
+                        {% endif %}
+                        <input class="form-control" type="search" name="q" value="{{ nav_query }}" placeholder="Search wiki or @user">
                         <button class="btn btn-brand" type="submit">Search</button>
                     </form>
                 </li>
