@@ -8,6 +8,7 @@ from datetime import datetime
 import html
 import os
 import re
+import unicodedata
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
@@ -237,12 +238,44 @@ def article_public_url(article_obj: Article) -> str:
     return url_for('article', article_title=article_obj.title)
 
 
+def normalize_identity(value: str) -> str:
+    """Normalize names for matching legacy article authors to current users."""
+    ascii_value = unicodedata.normalize('NFKD', value or '').encode('ascii', 'ignore').decode('ascii')
+    return re.sub(r'[^a-z0-9]+', '', ascii_value.lower())
+
+
+def find_user_for_article_author(author_name: str):
+    """Resolve exact usernames and older display-name author values to active users."""
+    if not author_name:
+        return None
+
+    exact_user = User.query.filter_by(username=author_name).first()
+    if exact_user:
+        return None if exact_user.is_archived else exact_user
+
+    normalized_author = normalize_identity(author_name)
+    if not normalized_author:
+        return None
+
+    active_users = User.query.filter(User.is_archived.is_(False)).all()
+    return next(
+        (
+            user
+            for user in active_users
+            if normalized_author in {
+                normalize_identity(user.username),
+                normalize_identity(user.public_display_name),
+            }
+        ),
+        None,
+    )
+
+
 def article_is_public(article_obj: Article) -> bool:
     """Public articles must be approved, not archived, and written by an active user."""
     if not article_obj or article_obj.is_archived or article_obj.status != 'approved':
         return False
-    author = User.query.filter_by(username=article_obj.author).first()
-    return bool(author and not author.is_archived)
+    return bool(find_user_for_article_author(article_obj.author))
 
 
 def can_open_article(article_obj: Article) -> bool:
@@ -301,11 +334,39 @@ def users_by_username(usernames):
 
 def active_users_by_username(usernames):
     """Return only non-archived users from a username collection."""
-    return {
-        username: user
-        for username, user in users_by_username(usernames).items()
-        if not user.is_archived
-    }
+    resolved_users = {}
+    for username in {username for username in usernames if username}:
+        user = find_user_for_article_author(username)
+        if user:
+            resolved_users[username] = user
+    return resolved_users
+
+
+def public_articles_for_user(user: User):
+    """Return public articles whose author field resolves to the given user."""
+    candidates = Article.query.filter(
+        Article.is_archived.is_(False),
+        func.lower(func.trim(Article.status)) == 'approved',
+    ).order_by(Article.created_at.desc()).all()
+    return [
+        article_obj
+        for article_obj in candidates
+        if (resolved_user := find_user_for_article_author(article_obj.author)) and resolved_user.id == user.id
+    ]
+
+
+def published_article_counts_by_user():
+    """Count public articles by resolved active user instead of raw author text."""
+    counts = {}
+    candidates = Article.query.filter(
+        Article.is_archived.is_(False),
+        func.lower(func.trim(Article.status)) == 'approved',
+    ).all()
+    for article_obj in candidates:
+        user = find_user_for_article_author(article_obj.author)
+        if user:
+            counts[user.username] = counts.get(user.username, 0) + 1
+    return counts
 
 
 def revision_matches_search(revision: ArticleRevision, search: str) -> bool:
@@ -502,7 +563,7 @@ def render_article_page(article_obj: Article):
     return render_template(
         'article.html',
         article=article_obj,
-        author_user=User.query.filter_by(username=article_obj.author).first(),
+        author_user=find_user_for_article_author(article_obj.author),
         random_article=None,
         rendered_content=rendered_content,
         infobox_rows=infobox_rows,
@@ -670,19 +731,7 @@ def authors():
     """Search public accounts; direct browsing shows only published authors."""
     search = (request.args.get('q') or '').strip()
     include_all_users = request.args.get('all') == '1'
-
-    published_counts_query = db.session.query(
-        Article.author,
-        func.count(Article.id),
-    ).filter(
-        Article.is_archived.is_(False),
-        Article.status == 'approved',
-    ).group_by(Article.author).all()
-    published_counts = {
-        username: count
-        for username, count in published_counts_query
-        if username
-    }
+    published_counts = published_article_counts_by_user()
 
     public_users_query = User.query.filter(User.is_archived.is_(False))
     if not include_all_users:
@@ -707,11 +756,7 @@ def public_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     if user.is_archived:
         abort(404)
-    articles = Article.query.filter_by(
-        author=user.username,
-        status='approved',
-        is_archived=False,
-    ).order_by(Article.created_at.desc()).all()
+    articles = public_articles_for_user(user)
     article_links = {article_obj.id: article_public_url(article_obj) for article_obj in articles}
     return render_template(
         'public_profile.html',
@@ -919,17 +964,8 @@ def dashboard_users():
         'role_za': User.role.desc(),
     }
     users = query.order_by(sort_map.get(sort, User.created_at.desc())).all()
-    published_counts = {
-        username: count
-        for username, count in db.session.query(Article.author, func.count(Article.id))
-        .filter(
-            Article.author.in_([user.username for user in users]),
-            Article.is_archived.is_(False),
-            Article.status == 'approved',
-        )
-        .group_by(Article.author)
-        .all()
-    }
+    all_published_counts = published_article_counts_by_user()
+    published_counts = {user.username: all_published_counts.get(user.username, 0) for user in users}
     role_form = RoleForm()
 
     return render_template(
