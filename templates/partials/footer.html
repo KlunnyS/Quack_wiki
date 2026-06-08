@@ -1,14 +1,17 @@
+{# Shared footer: secondary navigation, account links, contact email copy, and legal PDFs. #}
 {% from "partials/tag_link.html" import tag_article_link %}
 
 <footer class="site-footer">
     <div class="container-fluid">
         <div class="footer-grid">
+            {# Brand summary explains what the project is without duplicating the navbar. #}
             <section class="footer-brand">
                 <h5>Quack Wiki</h5>
                 <p>Community knowledge base for maps, weapons, enemies, lore, and development notes.</p>
                 <p class="footer-copy">&copy; 2026 Quack Wiki</p>
             </section>
 
+            {# Explore links are secondary discovery paths and legal-safe wiki sections. #}
             <section class="footer-section">
                 <h6>Explore</h6>
                 <div class="footer-links">
@@ -21,6 +24,7 @@
                 </div>
             </section>
 
+            {# Account links change by authentication state and role. #}
             <section class="footer-section">
                 <h6>Account</h6>
                 <div class="footer-links">
@@ -40,6 +44,7 @@
                 </div>
             </section>
 
+            {# Legal PDFs are static placeholders; email link is copied through base-page JavaScript. #}
             <section class="footer-section">
                 <h6>Contact & Legal</h6>
                 <div class="footer-links">

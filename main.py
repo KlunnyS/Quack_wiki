@@ -26,7 +26,7 @@ from forms import ArticleForm, LoginForm, PasswordChangeForm, ProfileForm, Regis
 from models import Article, ArticleRevision, SiteSettings, User, db
 from seed import seed_admin
 
-MAX_UPLOAD_SIZE_MB = 5
+MAX_UPLOAD_SIZE_MB = 50
 MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 app = Flask(__name__)
@@ -398,15 +398,6 @@ def user_matches_public_search(user: User, search: str) -> bool:
     return any(needle in value.lower() for value in fields)
 
 
-def users_by_username(usernames):
-    """Return users keyed by username for display helpers."""
-    cleaned_usernames = {username for username in usernames if username}
-    if not cleaned_usernames:
-        return {}
-    users = User.query.filter(User.username.in_(cleaned_usernames)).all()
-    return {user.username: user for user in users}
-
-
 def active_users_by_username(usernames):
     """Return only non-archived users from a username collection."""
     resolved_users = {}
@@ -640,7 +631,6 @@ def render_article_page(article_obj: Article):
         'article.html',
         article=article_obj,
         author_user=find_user_for_article_author(article_obj.author),
-        random_article=None,
         rendered_content=rendered_content,
         infobox_rows=infobox_rows,
         article_link=article_public_url(article_obj),

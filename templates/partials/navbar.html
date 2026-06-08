@@ -1,7 +1,7 @@
-{% from "partials/tag_link.html" import tag_article_link %}
-
+{# Shared top navigation: brand home link, primary links, search, and profile dropdown. #}
 <nav class="navbar navbar-expand-lg main-nav">
     <div class="container-fluid nav-wrap">
+        {# Brand logo is the single global home-page link. #}
         <a class="navbar-brand brand-mark" href="{{ url_for('index') }}">QUACK</a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -9,6 +9,7 @@
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
+            {# Primary navigation keeps high-level destinations only; wiki sections live in the sidebar. #}
             <ul class="navbar-nav me-auto nav-links">
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('articles') }}">Articles</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('authors') }}">Authors</a></li>
@@ -24,6 +25,7 @@
                 {% include "partials/sidebar.html" %}
             </div>
 
+            {# Search routes normal text to articles and @queries to author search. #}
             <ul class="navbar-nav ms-auto align-items-lg-center nav-tools">
                 <li class="nav-item nav-search-wrap">
                     <form class="nav-search" method="GET" action="{{ url_for('site_search') }}">
@@ -39,6 +41,7 @@
                 </li>
 
                 {% if current_user.is_authenticated %}
+                {# Authenticated users manage profile/settings/my pages from this dropdown. #}
                 <li class="nav-item dropdown ms-lg-3">
                     <a class="profile-trigger" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         {% if current_user.profile_image_url %}

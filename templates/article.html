@@ -1,9 +1,11 @@
+{# Article detail page: renders one approved article, toolbar actions, body markdown, and infobox metadata. #}
 {% extends "_base.html" %}
 
 {% block title %}{{ article.title }} - Quack Wiki{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-0 article-wiki">
+    {# Header shows public author link and article status/date metadata. #}
     <header class="article-header mb-3">
         <h1 class="article-title">{{ article.title or "Untitled" }}</h1>
         <p class="article-meta mb-0">
@@ -18,6 +20,7 @@
         </p>
     </header>
 
+    {# Toolbar exposes creation/edit/review actions based on permissions passed from the route. #}
     <div class="article-toolbar d-flex gap-2 mb-3 flex-wrap">
         {% if article.title|lower != 'about-us' %}
         <a href="{{ url_for('create_article') }}" class="btn btn-outline-light btn-sm">New Article</a>
@@ -55,6 +58,7 @@
             </section>
         </div>
 
+        {# Infobox always includes Author, then adds custom metadata rows from article.infobox_data. #}
         <aside class="col-xl-4">
             <section class="article-infobox">
                 <h5 class="infobox-title">{{ article.title }}</h5>

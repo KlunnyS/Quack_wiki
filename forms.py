@@ -10,6 +10,7 @@ IMAGE_UPLOAD_SIZE_MESSAGE = "Image must be 5 MB or smaller."
 IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"]
 
 
+# Public authentication forms used by register/login routes.
 class LoginForm(FlaskForm):
     """Email/password login form."""
 
@@ -29,6 +30,7 @@ class RegisterForm(FlaskForm):
     submit = SubmitField('Register')
 
 
+# Admin dashboard form for role changes.
 class RoleForm(FlaskForm):
     """Admin role assignment form."""
 
@@ -40,6 +42,7 @@ class RoleForm(FlaskForm):
     submit = SubmitField("Change")
 
 
+# Account settings forms are split so profile edits and password changes validate independently.
 class ProfileForm(FlaskForm):
     """User profile settings form."""
 
@@ -65,6 +68,7 @@ class PasswordChangeForm(FlaskForm):
     submit = SubmitField('Change password')
 
 
+# Article and site-settings forms both support image uploads with shared validation rules.
 class ArticleForm(FlaskForm):
     """Create/edit form for article content and metadata."""
 

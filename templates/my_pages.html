@@ -1,9 +1,11 @@
+{# User dashboard page: current user articles with search, status filters, archive/restore, and edit actions. #}
 {% extends "_base.html" %}
 
 {% block title %}My Pages - Quack Wiki{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-0">
+    {# Page header gives authors a quick path back to article creation. #}
     <header class="article-header mb-4">
         <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
             <div>
@@ -14,6 +16,7 @@
         </div>
     </header>
 
+    {# GET filters keep My Pages shareable/bookmarkable and preserve archive visibility. #}
     <section class="card p-3 p-lg-4 mb-4">
         <form method="GET" action="{{ url_for('my_pages') }}" class="row g-2 align-items-end" id="myPagesFilterForm">
             <div class="col-lg-4">
@@ -52,6 +55,7 @@
         </form>
     </section>
 
+    {# Cards expose only safe actions: archived pages cannot be opened or edited. #}
     <section class="my-pages-grid">
         {% for article in user_articles %}
         <article class="my-page-card">
@@ -103,6 +107,7 @@
 
 <script>
 (() => {
+    // Debounce search so typing does not submit the filter form on every keystroke.
     const search = document.getElementById('myPagesSearch');
     const form = document.getElementById('myPagesFilterForm');
     let timeout;

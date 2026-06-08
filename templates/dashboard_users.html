@@ -1,3 +1,4 @@
+{# Admin dashboard users tab: search/filter users, role changes, deactivation, and published counts. #}
 {% extends "_base.html" %}
 
 {% block title %}Dashboard Users - Quack Wiki{% endblock %}
@@ -5,6 +6,7 @@
 {% block content %}
 <div class="container-fluid px-0">
     <section id="users-section" class="card p-3">
+        {# Admin-only user management table with filters kept in the query string. #}
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0">Users</h4>
             <span class="text-muted">Total: {{ users|length }}</span>
@@ -59,6 +61,7 @@
                     <tr>
                         <td>{{ user.id }}</td>
                         <td>
+                            {# Deactivated users do not link to public profiles because those profiles are blocked. #}
                             {% if user.is_archived %}
                             <span class="text-muted">{{ user.username }}</span>
                             {% else %}
@@ -67,6 +70,7 @@
                             {% if user.username == "MainAdmin" %} <span class="badge bg-warning text-dark">Main</span>{% endif %}
                         </td>
                         <td>
+                            {# MainAdmin email is intentionally hidden from the dashboard table. #}
                             {% if user.username == "MainAdmin" %}
                                 <span class="text-muted">Hidden</span>
                             {% else %}
@@ -135,6 +139,7 @@
 
 <script>
 (() => {
+    // Debounced search keeps filtering responsive without excessive form submits.
     const search = document.getElementById('usersSearch');
     const form = document.getElementById('usersFilterForm');
     let t;

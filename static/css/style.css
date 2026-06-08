@@ -1,3 +1,4 @@
+/* Global design tokens used across layout, panels, navigation, and typography. */
 :root {
     --bg: #070c17;
     --bg-soft: #101a2d;
@@ -18,10 +19,14 @@
     --sidebar-top-offset: -0.35rem;
 }
 
+
+/* Universal box sizing keeps Bootstrap/custom layout widths predictable. */
 * {
     box-sizing: border-box;
 }
 
+
+/* Site-wide page background and base typography. */
 body {
     margin: 0;
     color: var(--text);
@@ -36,6 +41,8 @@ body {
     flex-direction: column;
 }
 
+
+/* Shared heading and brand font family. */
 h1,
 h2,
 h3,
@@ -46,11 +53,15 @@ h6,
     font-family: "Sora", sans-serif;
 }
 
+
+/* Links inherit component colors unless a component overrides them. */
 a {
     text-decoration: none;
     color: inherit;
 }
 
+
+/* Fixed top navigation bar and its brand/search/profile controls. */
 .main-nav {
     position: fixed;
     top: 0;
@@ -197,6 +208,8 @@ a {
     font-size: 0.92rem;
 }
 
+
+/* Private profile/settings and public profile avatar primitives. */
 .profile-page-avatar {
     width: 74px;
     height: 74px;
@@ -227,6 +240,8 @@ a {
     border-bottom: 0;
 }
 
+
+/* My Pages cards, archive badges, and action layout. */
 .my-pages-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -341,6 +356,8 @@ a {
     grid-column: 1 / -1;
 }
 
+
+/* Public author profile header and author directory cards. */
 .author-hero {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -477,6 +494,8 @@ a {
     grid-column: 1 / -1;
 }
 
+
+/* Main shell: fixed sidebar plus content column below the navbar. */
 .layout-shell {
     padding: var(--layout-top-pad) var(--layout-side-pad) 1.2rem;
     flex: 1 0 auto;
@@ -552,6 +571,8 @@ a {
     width: 100%;
 }
 
+
+/* Article detail/list styling, rendered markdown, and infobox layout. */
 .article-wiki {
     max-width: 1220px;
 }
@@ -689,6 +710,8 @@ a {
     font-weight: 600;
 }
 
+
+/* Article editor layout and in-page writing help. */
 .article-editor-layout {
     display: grid;
     grid-template-columns: minmax(0, 900px) minmax(240px, 320px);
@@ -741,6 +764,8 @@ a {
     margin-bottom: 0;
 }
 
+
+/* Home page hero/banner and category cards. */
 .hero {
     position: relative;
     overflow: hidden;
@@ -803,6 +828,8 @@ a {
     color: var(--text);
 }
 
+
+/* Dashboard settings preview/removal UI for the home banner image. */
 .dashboard-settings-card {
     max-width: 920px;
 }
@@ -844,6 +871,8 @@ a {
     margin: 0;
 }
 
+
+/* Generic cards, buttons, form controls, tables, dropdowns, and alerts. */
 .info-card h5,
 .article-title {
     color: #fff;
@@ -969,6 +998,8 @@ a {
     border-color: #64c4ff;
 }
 
+
+/* Site footer: brand summary, secondary links, account links, and legal/contact area. */
 .site-footer {
     margin-top: auto;
     min-height: var(--footer-height);
@@ -1018,6 +1049,8 @@ a {
     font-size: 0.9rem;
 }
 
+
+/* Tablet/mobile adjustments for collapsed navbar, sidebar, cards, footer, and editor layout. */
 @media (max-width: 991px) {
     .navbar-collapse {
         max-height: calc(100vh - var(--nav-height));
@@ -1104,6 +1137,8 @@ a {
     }
 }
 
+
+/* Narrow-phone adjustments for dense card action rows and author cards. */
 @media (max-width: 640px) {
     .authors-grid {
         grid-template-columns: 1fr;
