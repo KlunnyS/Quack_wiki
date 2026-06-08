@@ -52,6 +52,12 @@
                     {% if is_edit and article and article.image_url %}
                     <div class="form-text text-muted mt-1">Current picture: {{ article.image_url }}</div>
                     {% endif %}
+                    {% if is_edit and article and article.image_url and article.image_url != 'default.png' %}
+                    <div class="form-check mt-2">
+                        {{ form.remove_image(class="form-check-input") }}
+                        {{ form.remove_image.label(class="form-check-label") }}
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="mb-4">

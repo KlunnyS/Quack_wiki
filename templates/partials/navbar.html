@@ -35,7 +35,7 @@
                         {% elif request.endpoint not in ['articles', 'authors'] %}
                             {% set nav_query = '' %}
                         {% endif %}
-                        <input class="form-control" type="search" name="q" value="{{ nav_query }}" placeholder="Search wiki or @user">
+                        <input class="form-control" type="search" name="q" value="{{ nav_query }}" placeholder="Search wiki, #tag, or @user">
                         <button class="btn btn-brand" type="submit">Search</button>
                     </form>
                 </li>

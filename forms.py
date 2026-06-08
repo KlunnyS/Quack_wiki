@@ -2,7 +2,7 @@
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileSize
-from wtforms import FileField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms import BooleanField, FileField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 
 MAX_IMAGE_UPLOAD_SIZE = 5 * 1024 * 1024
@@ -80,6 +80,7 @@ class ArticleForm(FlaskForm):
         FileAllowed(IMAGE_EXTENSIONS, "Images only."),
         FileSize(max_size=MAX_IMAGE_UPLOAD_SIZE, message=IMAGE_UPLOAD_SIZE_MESSAGE),
     ])
+    remove_image = BooleanField("Remove current picture")
     tags = StringField("Tags (comma separated)")
     submit = SubmitField("Create Article")
 

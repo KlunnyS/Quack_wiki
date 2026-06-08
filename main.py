@@ -368,18 +368,31 @@ def article_has_tag(article_obj: Article, tag_name: str) -> bool:
     return any(str(tag).strip().lower() == wanted for tag in (article_obj.tags or []))
 
 
+def tag_search_needle(search: str):
+    """Return normalized tag name when search uses #tag syntax."""
+    needle = search.strip().lower()
+    if not needle.startswith('#'):
+        return None
+    return needle[1:].strip()
+
+
 def article_matches_search(article_obj: Article, search: str) -> bool:
     """Match article search against public article fields and tags."""
     needle = search.strip().lower()
     if not needle:
         return True
 
+    tag_needle = tag_search_needle(search)
+    tags = [str(tag).strip().lower() for tag in (article_obj.tags or [])]
+    if tag_needle is not None:
+        # Queries like "#lore" intentionally search tags only, not title/summary text.
+        return bool(tag_needle) and any(tag_needle in tag for tag in tags)
+
     fields = [
         article_obj.title or '',
         article_obj.summary or '',
         article_obj.author or '',
     ]
-    tags = [str(tag) for tag in (article_obj.tags or [])]
     return any(needle in value.lower() for value in fields + tags)
 
 
@@ -441,13 +454,18 @@ def revision_matches_search(revision: ArticleRevision, search: str) -> bool:
     if not needle:
         return True
 
+    tag_needle = tag_search_needle(search)
+    tags = [str(tag).strip().lower() for tag in (revision.tags or [])]
+    if tag_needle is not None:
+        # Keep pending-update search behavior consistent with public article #tag search.
+        return bool(tag_needle) and any(tag_needle in tag for tag in tags)
+
     fields = [
         revision.article.title if revision.article else '',
         revision.title or '',
         revision.summary or '',
         revision.editor or '',
     ]
-    tags = [str(tag) for tag in (revision.tags or [])]
     return any(needle in value.lower() for value in fields + tags)
 
 
@@ -973,24 +991,35 @@ def edit_article(article_id):
         parsed_tags, removed_reserved = normalize_article_tags(form.tags.data)
         if removed_reserved:
             flash('Reserved page tags can only be used by writers and admins.', 'warning')
-        image_path = uploaded_image or article_obj.image_url or 'default.png'
+        remove_current_image = form.remove_image.data and not uploaded_image
+        # A new upload wins over removal; otherwise removal resets to the default image.
+        if uploaded_image:
+            image_path = uploaded_image
+        elif remove_current_image:
+            image_path = 'default.png'
+        else:
+            image_path = article_obj.image_url or 'default.png'
 
-        if current_user.role == 'admin' and article_obj.status == 'approved':
+        if current_user.role in ['admin', 'writer']:
             article_obj.title = normalized_title
             article_obj.summary = (form.summary.data or '').strip()
             article_obj.content = form.content.data.strip()
             article_obj.infobox_data = (form.infobox_data.data or '').strip()
             article_obj.image_url = image_path
             article_obj.tags = parsed_tags
-            article_obj.status = 'approved'
-            article_obj.approved_by = current_user.username
-            article_obj.approved_at = datetime.utcnow()
+            if article_obj.status == 'approved':
+                article_obj.approved_by = current_user.username
+                article_obj.approved_at = datetime.utcnow()
+            if pending_revision:
+                db.session.delete(pending_revision)
             flash('Article updated successfully.', 'success')
         else:
             save_or_replace_pending_revision(article_obj, form, parsed_tags, image_path)
             flash('Article updated and sent for approval.', 'info')
 
         db.session.commit()
+        if uploaded_image or remove_current_image:
+            cleanup_unused_images()
         if article_is_public(article_obj):
             return redirect(article_public_url(article_obj))
         return redirect(url_for('my_pages'))
@@ -1058,9 +1087,6 @@ def dashboard_articles():
     sort = (request.args.get('sort') or 'newest').strip().lower()
 
     query = Article.query
-    # Writers can review their own submissions/updates, but only admins see every article.
-    if current_user.role == 'writer':
-        query = query.filter(Article.author == current_user.username)
     if not show_archived:
         query = query.filter(Article.is_archived.is_(False))
     if status_filter in {'pending', 'approved', 'declined'}:
@@ -1108,9 +1134,6 @@ def dashboard_updates():
         'editor_za': ArticleRevision.editor.desc(),
     }
     query = ArticleRevision.query.filter_by(status='pending')
-    # Writers only see update records they created; admins see all pending updates.
-    if current_user.role == 'writer':
-        query = query.filter(ArticleRevision.editor == current_user.username)
     revisions = query.order_by(sort_map.get(sort, ArticleRevision.created_at.desc())).all()
     if search:
         revisions = [revision for revision in revisions if revision_matches_search(revision, search)]
@@ -1213,7 +1236,7 @@ def toggle_archive_user(user_id):
 
 
 @app.route('/approve/<int:article_id>', methods=['POST'])
-@role_required(['admin'])
+@role_required(['admin', 'writer'])
 def approve(article_id):
     """Approve a new article or apply its latest pending revision."""
     article_obj = Article.query.get_or_404(article_id)
@@ -1238,7 +1261,7 @@ def approve(article_id):
 
 
 @app.route('/decline/<int:article_id>', methods=['POST'])
-@role_required(['admin'])
+@role_required(['admin', 'writer'])
 def decline(article_id):
     """Mark an article submission as declined."""
     article_obj = Article.query.get_or_404(article_id)
@@ -1255,7 +1278,7 @@ def decline(article_id):
 
 
 @app.route('/revisions/<int:revision_id>/approve', methods=['POST'])
-@role_required(['admin'])
+@role_required(['admin', 'writer'])
 def approve_revision(revision_id):
     """Approve one pending revision after checking title uniqueness."""
     revision = ArticleRevision.query.get_or_404(revision_id)
@@ -1274,7 +1297,7 @@ def approve_revision(revision_id):
 
 
 @app.route('/revisions/<int:revision_id>/decline', methods=['POST'])
-@role_required(['admin'])
+@role_required(['admin', 'writer'])
 def decline_revision(revision_id):
     """Delete a pending revision without changing the live article."""
     revision = ArticleRevision.query.get_or_404(revision_id)
@@ -1286,7 +1309,7 @@ def decline_revision(revision_id):
 
 
 @app.route('/articles/<int:article_id>/toggle-archive', methods=['POST'])
-@role_required(['admin'])
+@role_required(['admin', 'writer'])
 def toggle_archive_article(article_id):
     """Archive or restore any article from the reviewer dashboard."""
     article_obj = Article.query.get_or_404(article_id)

@@ -13,7 +13,7 @@
 
         <form method="GET" action="{{ url_for('dashboard_updates') }}" class="row g-2 mb-3" id="updatesFilterForm">
             <div class="col-md-6">
-                <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search article, proposed title, editor, summary, or tag" id="updatesSearch">
+                <input class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search article, proposed title, editor, summary, or #tag" id="updatesSearch">
             </div>
             <div class="col-md-4">
                 <select class="form-select" name="sort" onchange="this.form.submit()">
@@ -37,7 +37,7 @@
                         <th>Proposed Title</th>
                         <th>Summary</th>
                         <th>Tags</th>
-                        {% if current_user.role == 'admin' %}
+                        {% if current_user.role in ['admin', 'writer'] %}
                         <th>Actions</th>
                         {% endif %}
                     </tr>
@@ -63,7 +63,7 @@
                             <span class="text-muted">-</span>
                             {% endfor %}
                         </td>
-                        {% if current_user.role == 'admin' %}
+                        {% if current_user.role in ['admin', 'writer'] %}
                         <td class="d-flex gap-2 flex-wrap">
                             <form method="POST" action="{{ url_for('approve_revision', revision_id=revision.id) }}">
                                 <input type="hidden" name="next" value="{{ request.full_path }}">
@@ -78,7 +78,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="{% if current_user.role == 'admin' %}7{% else %}6{% endif %}" class="text-muted">No pending updates.</td>
+                        <td colspan="{% if current_user.role in ['admin', 'writer'] %}7{% else %}6{% endif %}" class="text-muted">No pending updates.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

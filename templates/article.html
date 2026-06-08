@@ -28,7 +28,7 @@
         {% if can_edit %}
         <a href="{{ url_for('edit_article', article_id=article.id) }}" class="btn btn-outline-info btn-sm">Edit</a>
         {% endif %}
-        {% if current_user.is_authenticated and current_user.role in ['admin'] %}
+        {% if current_user.is_authenticated and current_user.role in ['admin', 'writer'] %}
             {% if article.status == 'approved' %}
             <span class="badge bg-success align-self-center">Approved</span>
             {% elif article.status == 'declined' %}
@@ -42,7 +42,7 @@
             </form>
             {% endif %}
         {% endif %}
-        {% if pending_revision and current_user.is_authenticated and (current_user.role == 'admin' or current_user.username == pending_revision.editor) %}
+        {% if pending_revision and current_user.is_authenticated and (current_user.role in ['admin', 'writer'] or current_user.username == pending_revision.editor) %}
         <span class="badge bg-warning text-dark align-self-center">Pending update awaiting approval</span>
         {% endif %}
     </div>
