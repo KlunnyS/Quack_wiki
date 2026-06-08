@@ -126,8 +126,18 @@ def handle_upload_too_large(error):
 
 @app.context_processor
 def inject_site_settings():
-    """Expose site-wide settings to every template render."""
-    return {'site_settings': get_site_settings()}
+    """Expose site-wide settings and lightweight dashboard counters to templates."""
+    pending_counts = {'pending_articles': 0, 'pending_updates': 0}
+    if current_user.is_authenticated and current_user.role in ['admin', 'writer']:
+        # Sidebar badges should only count actionable article-management work.
+        pending_counts = {
+            'pending_articles': Article.query.filter(
+                Article.is_archived.is_(False),
+                func.lower(func.trim(Article.status)) == 'pending',
+            ).count(),
+            'pending_updates': ArticleRevision.query.filter_by(status='pending').count(),
+        }
+    return {'site_settings': get_site_settings(), 'dashboard_pending_counts': pending_counts}
 
 
 @login_manager.user_loader

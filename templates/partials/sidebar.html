@@ -7,25 +7,36 @@
     {% if current_user.role == 'admin' %}
     <a href="{{ url_for('dashboard_users') }}"><i class="bi bi-people-fill sidebar-icon"></i>Users</a>
     {% endif %}
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     <a href="{{ url_for('dashboard_articles') }}"><i class="bi bi-journal-text sidebar-icon"></i>Articles</a>
     <a href="{{ url_for('dashboard_updates') }}"><i class="bi bi-inbox sidebar-icon"></i>Pending Updates</a>
 =======
     <a class="sidebar-count-link" href="{{ url_for('dashboard_articles') }}">
+=======
+    <a href="{{ url_for('dashboard_articles') }}">
+>>>>>>> c6524901ad1f67dfc4a10123d52fd9c61e0be5df
         <span class="sidebar-link-label"><i class="bi bi-journal-text sidebar-icon"></i>Articles</span>
         {# Hide zero-count badges so only fresh/actionable queues stand out. #}
         {% if dashboard_pending_counts.pending_articles %}
         <span class="sidebar-count-badge">{{ dashboard_pending_counts.pending_articles }}</span>
         {% endif %}
     </a>
+<<<<<<< HEAD
     <a class="sidebar-count-link" href="{{ url_for('dashboard_updates') }}">
+=======
+    <a href="{{ url_for('dashboard_updates') }}">
+>>>>>>> c6524901ad1f67dfc4a10123d52fd9c61e0be5df
         <span class="sidebar-link-label"><i class="bi bi-inbox sidebar-icon"></i>Pending Updates</span>
         {# Pending update count mirrors the review queue, and disappears when empty. #}
         {% if dashboard_pending_counts.pending_updates %}
         <span class="sidebar-count-badge">{{ dashboard_pending_counts.pending_updates }}</span>
         {% endif %}
     </a>
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> c6524901ad1f67dfc4a10123d52fd9c61e0be5df
     {% if current_user.role == 'admin' %}
     <a href="{{ url_for('dashboard_settings') }}"><i class="bi bi-image sidebar-icon"></i>Site Settings</a>
     {% endif %}
