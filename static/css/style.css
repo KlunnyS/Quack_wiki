@@ -532,6 +532,10 @@ a {
 
 .wiki-sidebar a {
     display: block;
+<<<<<<< Updated upstream
+=======
+    text-align: left;
+>>>>>>> Stashed changes
     padding: 0.56rem 0.62rem;
     font-size: 1.02rem;
     line-height: 1.25;
@@ -544,6 +548,40 @@ a {
     background: rgba(255, 255, 255, 0.08);
 }
 
+<<<<<<< Updated upstream
+=======
+.wiki-sidebar .sidebar-count-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.sidebar-link-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.sidebar-count-badge {
+    flex: 0 0 auto;
+    margin-left: auto;
+    min-width: 1.55rem;
+    padding: 0.08rem 0.45rem;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(120deg, var(--brand), var(--brand-2));
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
+    box-shadow: 0 8px 18px rgba(249, 65, 122, 0.22);
+}
+
+>>>>>>> Stashed changes
 .sidebar-icon {
     display: inline-block;
     width: 1.1rem;
