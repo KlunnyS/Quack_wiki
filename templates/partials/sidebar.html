@@ -13,9 +13,6 @@
     <a href="{{ url_for('create_article') }}"><i class="bi bi-plus-square sidebar-icon"></i>Create Article</a>
     {% else %}
     <h6 class="sidebar-title">Explore</h6>
-    <a href="{{ url_for('index') }}"><i class="bi bi-house-door sidebar-icon"></i>Overview</a>
-    <a href="{{ url_for('articles') }}"><i class="bi bi-journal-richtext sidebar-icon"></i>Articles</a>
-    <a href="{{ url_for('authors') }}"><i class="bi bi-people sidebar-icon"></i>Authors</a>
     {{ tag_article_link('about-us', 'About', 'bi bi-info-circle') }}
     {{ tag_article_link('levels', 'Levels', 'bi bi-map') }}
     {{ tag_article_link('weapons', 'Weapons', 'bi bi-bullseye') }}

@@ -972,22 +972,37 @@ a {
 .site-footer {
     margin-top: auto;
     min-height: var(--footer-height);
-    padding: 1.5rem 1rem;
+    padding: 1.8rem 1rem;
     color: var(--text-dim);
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(6, 11, 22, 0.55);
 }
 
-.footer-content {
-    text-align: center;
+.footer-grid {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 1fr));
+    gap: 1.3rem;
+    max-width: 1220px;
+    margin: 0 auto;
+}
+
+.footer-brand h5,
+.footer-section h6 {
+    color: #fff;
+    margin-bottom: 0.55rem;
+}
+
+.footer-brand p,
+.footer-note,
+.footer-copy {
+    margin-bottom: 0.45rem;
+    color: var(--text-dim);
 }
 
 .footer-links {
     display: flex;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-top: 0.5rem;
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
 .footer-links a {
@@ -996,6 +1011,11 @@ a {
 
 .footer-links a:hover {
     color: #fff;
+}
+
+.footer-note {
+    margin-top: 0.7rem;
+    font-size: 0.9rem;
 }
 
 @media (max-width: 991px) {
@@ -1019,6 +1039,10 @@ a {
 
     .page-content-with-sidebar {
         margin-left: 0;
+    }
+
+    .footer-grid {
+        grid-template-columns: 1fr;
     }
 
     .hero {

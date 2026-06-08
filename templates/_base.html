@@ -67,6 +67,30 @@
                 }
             });
         });
+
+        document.querySelectorAll('[data-copy-email]').forEach((link) => {
+            link.addEventListener('click', async (event) => {
+                event.preventDefault();
+                const email = link.dataset.copyEmail;
+                const originalText = link.textContent;
+
+                try {
+                    await navigator.clipboard.writeText(email);
+                } catch (error) {
+                    const fallback = document.createElement('input');
+                    fallback.value = email;
+                    document.body.appendChild(fallback);
+                    fallback.select();
+                    document.execCommand('copy');
+                    fallback.remove();
+                }
+
+                link.textContent = 'Email Copied';
+                setTimeout(() => {
+                    link.textContent = originalText;
+                }, 1800);
+            });
+        });
     </script>
 </body>
 </html>

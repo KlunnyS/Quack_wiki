@@ -1,0 +1,89 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1433 >>
+stream
+BT
+/F1 22 Tf
+72 760 Td (Quack Wiki - Privacy Notice) Tj
+0 -30 Td
+/F1 12 Tf
+0 0 Td (Default placeholder privacy notice for a community wiki project.) Tj
+0 -22 Td
+/F1 10 Tf
+0 0 Td (Last updated: June 8, 2026) Tj
+0 -14 Td
+0 -8 Td
+/F1 13 Tf
+0 0 Td (1. Information Stored) Tj
+0 -18 Td
+/F1 10 Tf
+0 0 Td (The site may store usernames, email addresses, password hashes, profile text, uploaded) Tj
+0 -14 Td
+/F1 10 Tf
+0 0 Td (images, articles, and moderation status.) Tj
+0 -14 Td
+0 -8 Td
+/F1 10 Tf
+0 0 Td (Passwords are stored as hashes and should never be visible to administrators or other users.) Tj
+0 -14 Td
+0 -8 Td
+/F1 13 Tf
+0 0 Td (2. How Information Is Used) Tj
+0 -18 Td
+/F1 10 Tf
+0 0 Td (Account data is used for login, profiles, authorship, moderation, and dashboard management.) Tj
+0 -14 Td
+0 -8 Td
+/F1 10 Tf
+0 0 Td (Public profile information and approved articles may be visible to visitors.) Tj
+0 -14 Td
+0 -8 Td
+/F1 13 Tf
+0 0 Td (3. Deactivation and Removal) Tj
+0 -18 Td
+/F1 10 Tf
+0 0 Td (Deactivated accounts cannot log in and their public profiles and articles are hidden from) Tj
+0 -14 Td
+/F1 10 Tf
+0 0 Td (normal public views.) Tj
+0 -14 Td
+0 -8 Td
+/F1 10 Tf
+0 0 Td (Users can contact the maintainer for questions about account data or removal requests.) Tj
+0 -14 Td
+0 -8 Td
+/F1 13 Tf
+0 0 Td (4. Contact) Tj
+0 -18 Td
+/F1 10 Tf
+0 0 Td (For privacy questions, contact the site maintainer at info@quack.sk.) Tj
+0 -14 Td
+0 -8 Td
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1796
+%%EOF

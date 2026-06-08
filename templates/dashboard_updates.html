@@ -65,9 +65,11 @@
                         {% if current_user.role == 'admin' %}
                         <td class="d-flex gap-2 flex-wrap">
                             <form method="POST" action="{{ url_for('approve_revision', revision_id=revision.id) }}">
+                                <input type="hidden" name="next" value="{{ request.full_path }}">
                                 <button type="submit" class="btn btn-success btn-sm">Approve Update</button>
                             </form>
                             <form method="POST" action="{{ url_for('decline_revision', revision_id=revision.id) }}">
+                                <input type="hidden" name="next" value="{{ request.full_path }}">
                                 <button type="submit" class="btn btn-outline-danger btn-sm">Decline Update</button>
                             </form>
                         </td>

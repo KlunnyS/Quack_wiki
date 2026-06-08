@@ -9,6 +9,7 @@ import html
 import os
 import re
 import unicodedata
+from urllib.parse import urlparse, urljoin
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
@@ -151,6 +152,31 @@ def role_required(role_names: list):
         return wrapper
 
     return decorator
+
+
+def is_safe_redirect_url(target):
+    """Allow only local redirects to prevent open redirect bugs."""
+    if not target:
+        return False
+    host_url = urlparse(request.host_url)
+    redirect_url = urlparse(urljoin(request.host_url, target))
+    return redirect_url.scheme in ('http', 'https') and redirect_url.netloc == host_url.netloc
+
+
+def safe_next_url(default_endpoint='index'):
+    """Resolve a local next URL from query/form values or fall back to an endpoint."""
+    target = request.values.get('next')
+    if is_safe_redirect_url(target):
+        return target
+    return url_for(default_endpoint)
+
+
+def dashboard_return_url(default_endpoint):
+    """Return to the current dashboard filter page after POST actions when safe."""
+    target = request.form.get('next') or request.referrer
+    if is_safe_redirect_url(target):
+        return target
+    return url_for(default_endpoint)
 
 
 def _inline_markdown(text: str) -> str:
@@ -476,6 +502,7 @@ def can_edit_article(article_obj: Article) -> bool:
         return False
     if article_obj.is_archived:
         return False
+    # Writers are trusted contributors: they can edit articles, but non-admin edits are stored as revisions.
     if current_user.role in ['admin', 'writer']:
         return True
     return article_obj.author == current_user.username
@@ -670,7 +697,7 @@ def login():
         else:
             login_user(user)
             flash('Logged in successfully.', 'success')
-            return redirect(url_for('index'))
+            return redirect(safe_next_url())
 
     return render_template('auth/login.html', form=form, error=error)
 
@@ -911,7 +938,9 @@ def create_article():
             db.session.add(article_obj)
             db.session.commit()
             flash('Article created successfully.', 'success')
-            return redirect(url_for('article', article_title=article_obj.title))
+            if article_is_public(article_obj):
+                return redirect(article_public_url(article_obj))
+            return redirect(url_for('my_pages'))
         except SQLAlchemyError:
             db.session.rollback()
             flash('Could not create article. Check title uniqueness and field lengths.', 'danger')
@@ -1039,6 +1068,9 @@ def dashboard_articles():
     sort = (request.args.get('sort') or 'newest').strip().lower()
 
     query = Article.query
+    # Writers can review their own submissions/updates, but only admins see every article.
+    if current_user.role == 'writer':
+        query = query.filter(Article.author == current_user.username)
     if not show_archived:
         query = query.filter(Article.is_archived.is_(False))
     if status_filter in {'pending', 'approved', 'declined'}:
@@ -1085,9 +1117,11 @@ def dashboard_updates():
         'editor_az': ArticleRevision.editor.asc(),
         'editor_za': ArticleRevision.editor.desc(),
     }
-    revisions = ArticleRevision.query.filter_by(status='pending').order_by(
-        sort_map.get(sort, ArticleRevision.created_at.desc())
-    ).all()
+    query = ArticleRevision.query.filter_by(status='pending')
+    # Writers only see update records they created; admins see all pending updates.
+    if current_user.role == 'writer':
+        query = query.filter(ArticleRevision.editor == current_user.username)
+    revisions = query.order_by(sort_map.get(sort, ArticleRevision.created_at.desc())).all()
     if search:
         revisions = [revision for revision in revisions if revision_matches_search(revision, search)]
 
@@ -1147,23 +1181,23 @@ def set_role(user_id):
         user = User.query.get_or_404(user_id)
         if user.username == 'MainAdmin':
             flash('Cannot change MainAdmin role.', 'danger')
-            return redirect(url_for('dashboard_users'))
+            return redirect(dashboard_return_url('dashboard_users'))
         if user.is_archived:
             flash('Cannot change role for archived user.', 'danger')
-            return redirect(url_for('dashboard_users'))
+            return redirect(dashboard_return_url('dashboard_users'))
         if user.id == current_user.id:
             flash('You cannot change your own role.', 'danger')
-            return redirect(url_for('dashboard_users'))
+            return redirect(dashboard_return_url('dashboard_users'))
         admin_role_changed = user.role == 'admin' or form.role.data == 'admin'
         if admin_role_changed and current_user.username != 'MainAdmin':
             flash('Only MainAdmin can add or remove admin role.', 'danger')
-            return redirect(url_for('dashboard_users'))
+            return redirect(dashboard_return_url('dashboard_users'))
 
         user.role = form.role.data
         db.session.commit()
         flash(f'Role updated for {user.username}.', 'success')
 
-    return redirect(url_for('dashboard_users'))
+    return redirect(dashboard_return_url('dashboard_users'))
 
 
 @app.route('/users/<int:user_id>/toggle-archive', methods=['POST'])
@@ -1173,19 +1207,19 @@ def toggle_archive_user(user_id):
     user = User.query.get_or_404(user_id)
     if user.username == 'MainAdmin':
         flash('Cannot archive MainAdmin.', 'danger')
-        return redirect(url_for('dashboard_users'))
+        return redirect(dashboard_return_url('dashboard_users'))
     if user.id == current_user.id:
         flash('You cannot archive your own account.', 'danger')
-        return redirect(url_for('dashboard_users'))
+        return redirect(dashboard_return_url('dashboard_users'))
     if user.role == 'admin' and current_user.username != 'MainAdmin':
         flash('Only MainAdmin can archive another admin.', 'danger')
-        return redirect(url_for('dashboard_users'))
+        return redirect(dashboard_return_url('dashboard_users'))
 
     user.is_archived = not user.is_archived
     user.archived_at = datetime.utcnow() if user.is_archived else None
     db.session.commit()
     flash(f"User {'deactivated' if user.is_archived else 'reactivated'}: {user.username}", 'info')
-    return redirect(url_for('dashboard_users'))
+    return redirect(dashboard_return_url('dashboard_users'))
 
 
 @app.route('/approve/<int:article_id>', methods=['POST'])
@@ -1195,13 +1229,14 @@ def approve(article_id):
     article_obj = Article.query.get_or_404(article_id)
     if article_obj.is_archived:
         flash('Cannot approve archived article.', 'danger')
-        return redirect(url_for('dashboard_articles'))
+        return redirect(dashboard_return_url('dashboard_articles'))
 
     pending_revision = ArticleRevision.query.filter_by(
         article_id=article_obj.id,
         status='pending',
     ).order_by(ArticleRevision.created_at.desc()).first()
     if pending_revision:
+        # If a declined/pending article has an update, approval applies that reviewed revision.
         apply_revision(pending_revision)
     else:
         article_obj.status = 'approved'
@@ -1209,7 +1244,7 @@ def approve(article_id):
         article_obj.approved_at = datetime.utcnow()
     db.session.commit()
     flash(f'Approved article: {article_obj.title}', 'success')
-    return redirect(url_for('dashboard_articles'))
+    return redirect(dashboard_return_url('dashboard_articles'))
 
 
 @app.route('/decline/<int:article_id>', methods=['POST'])
@@ -1219,14 +1254,14 @@ def decline(article_id):
     article_obj = Article.query.get_or_404(article_id)
     if article_obj.is_archived:
         flash('Cannot decline archived article.', 'danger')
-        return redirect(url_for('dashboard_articles'))
+        return redirect(dashboard_return_url('dashboard_articles'))
 
     article_obj.status = 'declined'
     article_obj.approved_by = current_user.username
     article_obj.approved_at = datetime.utcnow()
     db.session.commit()
     flash('Article declined.', 'warning')
-    return redirect(url_for('dashboard_articles'))
+    return redirect(dashboard_return_url('dashboard_articles'))
 
 
 @app.route('/revisions/<int:revision_id>/approve', methods=['POST'])
@@ -1240,12 +1275,12 @@ def approve_revision(revision_id):
     ).first()
     if duplicate:
         flash('Cannot approve update because another article already uses that title.', 'danger')
-        return redirect(url_for('dashboard_updates'))
+        return redirect(dashboard_return_url('dashboard_updates'))
 
     article_obj = apply_revision(revision)
     db.session.commit()
     flash(f'Approved update for article: {article_obj.title}', 'success')
-    return redirect(url_for('dashboard_updates'))
+    return redirect(dashboard_return_url('dashboard_updates'))
 
 
 @app.route('/revisions/<int:revision_id>/decline', methods=['POST'])
@@ -1257,7 +1292,7 @@ def decline_revision(revision_id):
     db.session.delete(revision)
     db.session.commit()
     flash(f'Discarded pending update for article: {title}', 'warning')
-    return redirect(url_for('dashboard_updates'))
+    return redirect(dashboard_return_url('dashboard_updates'))
 
 
 @app.route('/articles/<int:article_id>/toggle-archive', methods=['POST'])
@@ -1269,7 +1304,7 @@ def toggle_archive_article(article_id):
     article_obj.archived_at = datetime.utcnow() if article_obj.is_archived else None
     db.session.commit()
     flash(f"Article {'archived' if article_obj.is_archived else 'restored'}: {article_obj.title}", 'info')
-    return redirect(url_for('dashboard_articles'))
+    return redirect(dashboard_return_url('dashboard_articles'))
 
 
 @app.route('/articles/<int:article_id>/archive-own', methods=['POST'])

@@ -2,21 +2,53 @@
 
 <footer class="site-footer">
     <div class="container-fluid">
-        <div class="footer-content">
-            <p class="mb-1">&copy; 2026 Quack Wiki</p>
-            <p class="mb-0">Community knowledge base for maps, weapons, enemies, and lore.</p>
-            <div class="footer-links">
-                <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('articles') }}">Articles</a>
-                {{ tag_article_link('about-us', 'About') }}
-                <a href="{{ url_for('create_article') }}">Create Article</a>
-                {% if current_user.is_authenticated and current_user.role == 'admin' %}
-                <a href="{{ url_for('dashboard_users') }}">Admin Dashboard</a>
-                {% elif current_user.is_authenticated and current_user.role == 'writer' %}
-                <a href="{{ url_for('dashboard_articles') }}">Articles Dashboard</a>
-                {% endif %}
-                <a href="{{ url_for('login') }}">Login</a>
-            </div>
+        <div class="footer-grid">
+            <section class="footer-brand">
+                <h5>Quack Wiki</h5>
+                <p>Community knowledge base for maps, weapons, enemies, lore, and development notes.</p>
+                <p class="footer-copy">&copy; 2026 Quack Wiki</p>
+            </section>
+
+            <section class="footer-section">
+                <h6>Explore</h6>
+                <div class="footer-links">
+                    <a href="{{ url_for('articles') }}">Browse Articles</a>
+                    <a href="{{ url_for('authors') }}">Authors</a>
+                    {{ tag_article_link('about-us', 'About') }}
+                    {{ tag_article_link('levels', 'Levels') }}
+                    {{ tag_article_link('weapons', 'Weapons') }}
+                    {{ tag_article_link('lore', 'Lore') }}
+                </div>
+            </section>
+
+            <section class="footer-section">
+                <h6>Account</h6>
+                <div class="footer-links">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('my_pages') }}">My Pages</a>
+                    <a href="{{ url_for('create_article') }}">Create Article</a>
+                    <a href="{{ url_for('profile') }}">Settings</a>
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('dashboard_users') }}">Admin Dashboard</a>
+                    {% elif current_user.role == 'writer' %}
+                    <a href="{{ url_for('dashboard_articles') }}">Writer Dashboard</a>
+                    {% endif %}
+                    {% else %}
+                    <a href="{{ url_for('login') }}">Login</a>
+                    <a href="{{ url_for('register') }}">Register</a>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="footer-section">
+                <h6>Contact & Legal</h6>
+                <div class="footer-links">
+                    <a href="#" data-copy-email="info@quack.sk">info@quack.sk</a>
+                    <a href="{{ url_for('static', filename='docs/terms-of-use.pdf') }}">Terms of Use</a>
+                    <a href="{{ url_for('static', filename='docs/privacy-notice.pdf') }}">Privacy Notice</a>
+                </div>
+                <p class="footer-note">Fan/community project. Game assets and names belong to their respective owners.</p>
+            </section>
         </div>
     </div>
 </footer>
