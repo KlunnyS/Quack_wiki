@@ -1,0 +1,1534 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R] /Count 8 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+6 0 obj
+<< /Length 5256 >>
+stream
+BT
+/HelveticaBold 18.00 Tf
+54.00 780.00 Td
+(Quack Wiki Flask Application - Code Documentation) Tj
+-54.00 -780.00 Td
+/HelveticaBold 15.00 Tf
+54.00 738.00 Td
+(Quack Wiki Flask Application - Detailed Code Documentation) Tj
+-54.00 -738.00 Td
+/Helvetica 9.50 Tf
+54.00 707.00 Td
+(Generated from the current main.py source file.) Tj
+-54.00 -707.00 Td
+/HelveticaBold 15.00 Tf
+54.00 679.50 Td
+(Document purpose) Tj
+-54.00 -679.50 Td
+/Helvetica 9.50 Tf
+54.00 648.50 Td
+(This document explains the main Flask application and gives detailed commentary for the larger) Tj
+-54.00 -648.50 Td
+/Helvetica 9.50 Tf
+54.00 635.00 Td
+(systems: startup/bootstrap, authentication and authorization, safe redirects, markdown rendering,) Tj
+-54.00 -635.00 Td
+/Helvetica 9.50 Tf
+54.00 621.50 Td
+(article visibility, article and revision workflows, dashboard filtering, role management,) Tj
+-54.00 -621.50 Td
+/Helvetica 9.50 Tf
+54.00 608.00 Td
+(archiving, uploads, and public article rendering.) Tj
+-54.00 -608.00 Td
+/Helvetica 9.50 Tf
+54.00 586.50 Td
+(Important note: line numbers refer to the current repository file main.py. The source code) Tj
+-54.00 -586.50 Td
+/Helvetica 9.50 Tf
+54.00 573.00 Td
+(currently stores SECRET_KEY as a literal string on line 33; in a real deployment, that should be) Tj
+-54.00 -573.00 Td
+/Helvetica 9.50 Tf
+54.00 559.50 Td
+(moved to an environment variable.) Tj
+-54.00 -559.50 Td
+/HelveticaBold 15.00 Tf
+54.00 532.00 Td
+(1. High-level architecture) Tj
+-54.00 -532.00 Td
+/Helvetica 9.50 Tf
+54.00 501.00 Td
+(main.py is the central controller for Quack Wiki. It configures Flask and SQLAlchemy, initializes) Tj
+-54.00 -501.00 Td
+/Helvetica 9.50 Tf
+54.00 487.50 Td
+(Flask-Login, creates required folders and database rows at startup, defines helper functions, and) Tj
+-54.00 -487.50 Td
+/Helvetica 9.50 Tf
+54.00 474.00 Td
+(declares the public, authenticated-user, writer, and admin routes.) Tj
+-54.00 -474.00 Td
+/Helvetica 9.50 Tf
+68.00 452.50 Td
+(- Models used: User, Article, ArticleRevision, SiteSettings, and db from models.py.) Tj
+-68.00 -452.50 Td
+/Helvetica 9.50 Tf
+68.00 435.00 Td
+(- Forms used: RegisterForm, LoginForm, ProfileForm, PasswordChangeForm, ArticleForm, RoleForm,) Tj
+-68.00 -435.00 Td
+/Helvetica 9.50 Tf
+68.00 421.50 Td
+(  and SiteSettingsForm from forms.py.) Tj
+-68.00 -421.50 Td
+/Helvetica 9.50 Tf
+68.00 404.00 Td
+(- Main workflow: users create articles; articles start pending; normal-user edits become) Tj
+-68.00 -404.00 Td
+/Helvetica 9.50 Tf
+68.00 390.50 Td
+(  pending revisions; trusted editors can update live articles; admins and writers can) Tj
+-68.00 -390.50 Td
+/Helvetica 9.50 Tf
+68.00 377.00 Td
+(  approve/decline content.) Tj
+-68.00 -377.00 Td
+/Helvetica 9.50 Tf
+68.00 359.50 Td
+(- Public visibility rule: an article must be approved, not archived, and attached to an active) Tj
+-68.00 -359.50 Td
+/Helvetica 9.50 Tf
+68.00 346.00 Td
+(  user.) Tj
+-68.00 -346.00 Td
+/Courier 8.50 Tf
+54.00 324.50 Td
+(Layer | Main responsibility | Important functions / routes) Tj
+-54.00 -324.50 Td
+/Courier 8.50 Tf
+54.00 309.00 Td
+(Application setup | Configure Flask, database, uploads, folders, startup cleanup | Lines 1-121,) Tj
+-54.00 -309.00 Td
+/Courier 8.50 Tf
+54.00 296.50 Td
+(cleanupunusedimages\(\), ensureuserprofilecolumns\(\), getsite_settings\(\)) Tj
+-54.00 -296.50 Td
+/Courier 8.50 Tf
+54.00 281.00 Td
+(Authentication | Register, login, logout, session loading, block archived users | register\(\),) Tj
+-54.00 -281.00 Td
+/Courier 8.50 Tf
+54.00 268.50 Td
+(login\(\), logout\(\), load_user\(\)) Tj
+-54.00 -268.50 Td
+/Courier 8.50 Tf
+54.00 253.00 Td
+(Authorization | Protect routes by role and ownership | rolerequired\(\), canedit_article\(\), route) Tj
+-54.00 -253.00 Td
+/Courier 8.50 Tf
+54.00 240.50 Td
+(decorators) Tj
+-54.00 -240.50 Td
+/Courier 8.50 Tf
+54.00 225.00 Td
+(Content rendering | Convert safe markdown and infobox text into template data |) Tj
+-54.00 -225.00 Td
+/Courier 8.50 Tf
+54.00 212.50 Td
+(inlinemarkdown\(\), rendersimplemarkdown\(\), parseinfoboxdata\(\), renderarticlepage\(\)) Tj
+-54.00 -212.50 Td
+/Courier 8.50 Tf
+54.00 197.00 Td
+(Article lifecycle | Create, edit, approve, decline, archive, restore | createarticle\(\),) Tj
+-54.00 -197.00 Td
+/Courier 8.50 Tf
+54.00 184.50 Td
+(editarticle\(\), approve\(\), decline\(\), archiveownarticle\(\)) Tj
+-54.00 -184.50 Td
+/Courier 8.50 Tf
+54.00 169.00 Td
+(Revision lifecycle | Store pending edits and apply them after review |) Tj
+-54.00 -169.00 Td
+/Courier 8.50 Tf
+54.00 156.50 Td
+(saveorreplacependingrevision\(\), applyrevision\(\), approverevision\(\), decline_revision\(\)) Tj
+-54.00 -156.50 Td
+/Courier 8.50 Tf
+54.00 141.00 Td
+(Dashboards | Search, filter, sort, approve, archive, manage users and settings |) Tj
+-54.00 -141.00 Td
+/Courier 8.50 Tf
+54.00 128.50 Td
+(dashboardusers\(\), dashboardarticles\(\), dashboardupdates\(\), dashboardsettings\(\)) Tj
+-54.00 -128.50 Td
+/Courier 8.50 Tf
+54.00 113.00 Td
+(Public browsing | Home, search, article lists, tag-backed pages, author profiles | index\(\),) Tj
+-54.00 -113.00 Td
+/Courier 8.50 Tf
+54.00 100.50 Td
+(articles\(\), article\(\), about\(\), tagged_article\(\), authors\(\)) Tj
+-54.00 -100.50 Td
+/HelveticaBold 15.00 Tf
+54.00 75.00 Td
+(2. Imports, constants, and app configuration) Tj
+-54.00 -75.00 Td
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /Helvetica 3 0 R /HelveticaBold 4 0 R /Courier 5 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 5572 >>
+stream
+BT
+/Courier 8.50 Tf
+54.00 788.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -788.00 Td
+/Courier 8.50 Tf
+54.00 772.50 Td
+(1-5 | Module docstring explains that main.py owns app setup, routes, rendering, uploads, and) Tj
+-54.00 -772.50 Td
+/Courier 8.50 Tf
+54.00 760.00 Td
+(SQLite compatibility work.) Tj
+-54.00 -760.00 Td
+/Courier 8.50 Tf
+54.00 744.50 Td
+(7-16 | Standard-library and SQLAlchemy imports. These support timestamps, HTML escaping,) Tj
+-54.00 -744.50 Td
+/Courier 8.50 Tf
+54.00 732.00 Td
+(filesystem work, regex parsing, identity normalization, redirect parsing, query helpers,) Tj
+-54.00 -732.00 Td
+/Courier 8.50 Tf
+54.00 719.50 Td
+(exception handling, decorators, and UUID file names.) Tj
+-54.00 -719.50 Td
+/Courier 8.50 Tf
+54.00 704.00 Td
+(18-27 | Flask, Flask-Login, SQLAlchemy text SQL, Werkzeug upload/security helpers, project) Tj
+-54.00 -704.00 Td
+/Courier 8.50 Tf
+54.00 691.50 Td
+(forms, models, and seed data are imported.) Tj
+-54.00 -691.50 Td
+/Courier 8.50 Tf
+54.00 676.00 Td
+(29-30 | Defines a 50 MB global request upload limit and converts it to bytes for Flask.) Tj
+-54.00 -676.00 Td
+/Courier 8.50 Tf
+54.00 660.50 Td
+(32-39 | Creates the Flask app and configures the secret key, SQLite database, SQLAlchemy) Tj
+-54.00 -660.50 Td
+/Courier 8.50 Tf
+54.00 648.00 Td
+(behavior, maximum content length, and upload folders.) Tj
+-54.00 -648.00 Td
+/Courier 8.50 Tf
+54.00 632.50 Td
+(41 | Binds the shared SQLAlchemy db object to this Flask app.) Tj
+-54.00 -632.50 Td
+/HelveticaBold 15.00 Tf
+54.00 607.00 Td
+(3. Startup and maintenance helpers) Tj
+-54.00 -607.00 Td
+/Courier 8.50 Tf
+54.00 576.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -576.00 Td
+/Courier 8.50 Tf
+54.00 560.50 Td
+(44-81 | cleanupunusedimages\(\) collects all image paths still referenced by articles, revisions,) Tj
+-54.00 -560.50 Td
+/Courier 8.50 Tf
+54.00 548.00 Td
+(profiles, and site settings, then deletes unreferenced files from managed upload folders. This) Tj
+-54.00 -548.00 Td
+/Courier 8.50 Tf
+54.00 535.50 Td
+(prevents abandoned uploads from accumulating.) Tj
+-54.00 -535.50 Td
+/Courier 8.50 Tf
+54.00 520.00 Td
+(84-95 | ensureuserprofilecolumns\(\) inspects the SQLite user table with PRAGMA tableinfo\(user\)) Tj
+-54.00 -520.00 Td
+/Courier 8.50 Tf
+54.00 507.50 Td
+(and adds profile columns when an older database is missing them. This is a lightweight) Tj
+-54.00 -507.50 Td
+/Courier 8.50 Tf
+54.00 495.00 Td
+(compatibility migration.) Tj
+-54.00 -495.00 Td
+/Courier 8.50 Tf
+54.00 479.50 Td
+(98-105 | getsitesettings\(\) returns the singleton SiteSettings row with id=1, creating it on) Tj
+-54.00 -479.50 Td
+/Courier 8.50 Tf
+54.00 467.00 Td
+(first run so templates and settings routes always have a row to read.) Tj
+-54.00 -467.00 Td
+/Courier 8.50 Tf
+54.00 451.50 Td
+(108-117 | Startup app context creates tables, creates upload folders, runs the SQLite) Tj
+-54.00 -451.50 Td
+/Courier 8.50 Tf
+54.00 439.00 Td
+(compatibility migration, ensures site settings exist, seeds initial users, and cleans unused) Tj
+-54.00 -439.00 Td
+/Courier 8.50 Tf
+54.00 426.50 Td
+(images.) Tj
+-54.00 -426.50 Td
+/Courier 8.50 Tf
+54.00 411.00 Td
+(119-121 | Initializes Flask-Login and sets the login route used when protected pages require) Tj
+-54.00 -411.00 Td
+/Courier 8.50 Tf
+54.00 398.50 Td
+(authentication.) Tj
+-54.00 -398.50 Td
+/HelveticaBold 15.00 Tf
+54.00 373.00 Td
+(4. Request handlers, login sessions, and role-based) Tj
+-54.00 -373.00 Td
+/HelveticaBold 15.00 Tf
+54.00 354.00 Td
+(authorization) Tj
+-54.00 -354.00 Td
+/Courier 8.50 Tf
+54.00 323.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -323.00 Td
+/Courier 8.50 Tf
+54.00 307.50 Td
+(126-130 | handleuploadtoo_large\(\) catches oversized request uploads and redirects with a) Tj
+-54.00 -307.50 Td
+/Courier 8.50 Tf
+54.00 295.00 Td
+(friendly flash message instead of showing a raw Flask error.) Tj
+-54.00 -295.00 Td
+/Courier 8.50 Tf
+54.00 279.50 Td
+(133-146 | injectsitesettings\(\) injects site_settings and dashboard pending counters into every) Tj
+-54.00 -279.50 Td
+/Courier 8.50 Tf
+54.00 267.00 Td
+(template. Counters are only calculated for admins and writers.) Tj
+-54.00 -267.00 Td
+/Courier 8.50 Tf
+54.00 251.50 Td
+(149-155 | loaduser\(\) restores currentuser from the Flask-Login session. Archived users return) Tj
+-54.00 -251.50 Td
+/Courier 8.50 Tf
+54.00 239.00 Td
+(None, blocking their sessions.) Tj
+-54.00 -239.00 Td
+/Courier 8.50 Tf
+54.00 223.50 Td
+(158-171 | rolerequired\(\) is a decorator factory. It wraps a route with loginrequired, then) Tj
+-54.00 -223.50 Td
+/Courier 8.50 Tf
+54.00 211.00 Td
+(checks that current_user.role is in the allowed role list. Failed checks abort with 403.) Tj
+-54.00 -211.00 Td
+/Helvetica 9.50 Tf
+54.00 191.50 Td
+(Why this group is complex: rolerequired\(\) returns a decorator, and that decorator returns the) Tj
+-54.00 -191.50 Td
+/Helvetica 9.50 Tf
+54.00 178.00 Td
+(actual route wrapper. This lets routes declare role access cleanly with @rolerequired\(['admin']\).) Tj
+-54.00 -178.00 Td
+/HelveticaBold 15.00 Tf
+54.00 150.50 Td
+(5. Safe redirect protection) Tj
+-54.00 -150.50 Td
+/Courier 8.50 Tf
+54.00 119.50 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -119.50 Td
+/Courier 8.50 Tf
+54.00 104.00 Td
+(174-180 | issaferedirect_url\(\) rejects empty targets, resolves relative URLs against the) Tj
+-54.00 -104.00 Td
+/Courier 8.50 Tf
+54.00 91.50 Td
+(current host, and only allows http/https redirects that stay on the same host. This blocks open) Tj
+-54.00 -91.50 Td
+/Courier 8.50 Tf
+54.00 79.00 Td
+(redirect bugs.) Tj
+-54.00 -79.00 Td
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /Helvetica 3 0 R /HelveticaBold 4 0 R /Courier 5 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 5745 >>
+stream
+BT
+/Courier 8.50 Tf
+54.00 788.00 Td
+(183-188 | safenexturl\(\) reads next from query/form data and returns it only when safe;) Tj
+-54.00 -788.00 Td
+/Courier 8.50 Tf
+54.00 775.50 Td
+(otherwise it falls back to a named endpoint.) Tj
+-54.00 -775.50 Td
+/Courier 8.50 Tf
+54.00 760.00 Td
+(191-196 | dashboardreturnurl\(\) keeps dashboard filters after POST actions by checking hidden) Tj
+-54.00 -760.00 Td
+/Courier 8.50 Tf
+54.00 747.50 Td
+(form next first, then request.referrer, while still using the safe redirect guard.) Tj
+-54.00 -747.50 Td
+/HelveticaBold 15.00 Tf
+54.00 722.00 Td
+(6. Safe limited markdown renderer) Tj
+-54.00 -722.00 Td
+/Courier 8.50 Tf
+54.00 691.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -691.00 Td
+/Courier 8.50 Tf
+54.00 675.50 Td
+(201-222 | inlinemarkdown\(\) handles inline code, links, bold, and italic. It stashes escaped) Tj
+-54.00 -675.50 Td
+/Courier 8.50 Tf
+54.00 663.00 Td
+(code spans, escapes the rest of the text, converts only known markdown patterns, then restores) Tj
+-54.00 -663.00 Td
+/Courier 8.50 Tf
+54.00 650.50 Td
+(the safe code HTML.) Tj
+-54.00 -650.50 Td
+/Courier 8.50 Tf
+54.00 635.00 Td
+(225-329 | rendersimplemarkdown\(\) renders a safe block-level markdown subset: headings,) Tj
+-54.00 -635.00 Td
+/Courier 8.50 Tf
+54.00 622.50 Td
+(paragraphs, blockquotes, ordered lists, unordered lists, fenced code blocks, and inline) Tj
+-54.00 -622.50 Td
+/Courier 8.50 Tf
+54.00 610.00 Td
+(formatting. It does not allow raw HTML.) Tj
+-54.00 -610.00 Td
+/Courier 8.50 Tf
+54.00 594.50 Td
+(239-260 | Nested helpers close lists, flush paragraphs, and flush code blocks. Keeping them) Tj
+-54.00 -594.50 Td
+/Courier 8.50 Tf
+54.00 582.00 Td
+(nested makes the state local to this renderer.) Tj
+-54.00 -582.00 Td
+/Courier 8.50 Tf
+54.00 566.50 Td
+(262-329 | The main parsing loop processes each line, changes state for code/list blocks,) Tj
+-54.00 -566.50 Td
+/Courier 8.50 Tf
+54.00 554.00 Td
+(creates escaped HTML blocks, flushes unfinished state at the end, and joins the blocks into one) Tj
+-54.00 -554.00 Td
+/Courier 8.50 Tf
+54.00 541.50 Td
+(HTML string.) Tj
+-54.00 -541.50 Td
+/Helvetica 9.50 Tf
+54.00 522.00 Td
+(Key security idea: user article content is treated as text. The renderer escapes raw content and) Tj
+-54.00 -522.00 Td
+/Helvetica 9.50 Tf
+54.00 508.50 Td
+(creates only a small known set of HTML tags.) Tj
+-54.00 -508.50 Td
+/HelveticaBold 15.00 Tf
+54.00 481.00 Td
+(7. Article identity, visibility, search, and reserved pages) Tj
+-54.00 -481.00 Td
+/Courier 8.50 Tf
+54.00 450.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -450.00 Td
+/Courier 8.50 Tf
+54.00 434.50 Td
+(334-338 | articlepublicurl\(\) sends articles tagged page:about-us to /about; all other articles) Tj
+-54.00 -434.50 Td
+/Courier 8.50 Tf
+54.00 422.00 Td
+(use /article/<title>.) Tj
+-54.00 -422.00 Td
+/Courier 8.50 Tf
+54.00 406.50 Td
+(341-344 | normalize_identity\(\) removes accents, lowercases text, and strips non-alphanumeric) Tj
+-54.00 -406.50 Td
+/Courier 8.50 Tf
+54.00 394.00 Td
+(characters so legacy author names can match current users.) Tj
+-54.00 -394.00 Td
+/Courier 8.50 Tf
+54.00 378.50 Td
+(347-371 | finduserforarticleauthor\(\) resolves an article author string to an active user by) Tj
+-54.00 -378.50 Td
+/Courier 8.50 Tf
+54.00 366.00 Td
+(exact username first, then normalized username/display-name matching.) Tj
+-54.00 -366.00 Td
+/Courier 8.50 Tf
+54.00 350.50 Td
+(374-383 | articleispublic\(\) and canopenarticle\(\) require approved status, non-archived article) Tj
+-54.00 -350.50 Td
+/Courier 8.50 Tf
+54.00 338.00 Td
+(state, and an active resolved author.) Tj
+-54.00 -338.00 Td
+/Courier 8.50 Tf
+54.00 322.50 Td
+(386-394 | staticpagetag\(\) and articlehastag\(\) normalize reserved page tags and check tag lists) Tj
+-54.00 -322.50 Td
+/Courier 8.50 Tf
+54.00 310.00 Td
+(case-insensitively.) Tj
+-54.00 -310.00 Td
+/Courier 8.50 Tf
+54.00 294.50 Td
+(397-422 | tagsearchneedle\(\) and articlematchessearch\(\) support normal text search and #tag) Tj
+-54.00 -294.50 Td
+/Courier 8.50 Tf
+54.00 282.00 Td
+(search. #tag searches intentionally look at tags only.) Tj
+-54.00 -282.00 Td
+/Courier 8.50 Tf
+54.00 266.50 Td
+(425-437 | usermatchespublic_search\(\) searches public user fields only and does not search email) Tj
+-54.00 -266.50 Td
+/Courier 8.50 Tf
+54.00 254.00 Td
+(addresses.) Tj
+-54.00 -254.00 Td
+/Courier 8.50 Tf
+54.00 238.50 Td
+(440-474 | activeusersbyusername\(\), publicarticlesforuser\(\), and publishedarticlecountsbyuser\(\)) Tj
+-54.00 -238.50 Td
+/Courier 8.50 Tf
+54.00 226.00 Td
+(resolve author strings to active users before showing public author data.) Tj
+-54.00 -226.00 Td
+/Courier 8.50 Tf
+54.00 210.50 Td
+(477-494 | revisionmatchessearch\(\) applies the same normal text and #tag search behavior to) Tj
+-54.00 -210.50 Td
+/Courier 8.50 Tf
+54.00 198.00 Td
+(pending revisions.) Tj
+-54.00 -198.00 Td
+/Courier 8.50 Tf
+54.00 182.50 Td
+(498-511 | findpublishedarticlebytag\(\) finds the newest public approved article with a reserved) Tj
+-54.00 -182.50 Td
+/Courier 8.50 Tf
+54.00 170.00 Td
+(page tag. This powers /about and /wiki/<tag>.) Tj
+-54.00 -170.00 Td
+/Courier 8.50 Tf
+54.00 154.50 Td
+(515-531 | normalizearticletags\(\) lowercases comma-separated tags, removes duplicates, and) Tj
+-54.00 -154.50 Td
+/Courier 8.50 Tf
+54.00 142.00 Td
+(blocks normal users from creating reserved page:* tags.) Tj
+-54.00 -142.00 Td
+/Courier 8.50 Tf
+54.00 126.50 Td
+(534-543 | caneditarticle\(\) allows edits only for authenticated users, blocks archived articles,) Tj
+-54.00 -126.50 Td
+/Courier 8.50 Tf
+54.00 114.00 Td
+(and permits admins, writers, or the article owner.) Tj
+-54.00 -114.00 Td
+/HelveticaBold 15.00 Tf
+54.00 88.50 Td
+(8. Upload helpers, username sync, revisions, and rendering) Tj
+-54.00 -88.50 Td
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /Helvetica 3 0 R /HelveticaBold 4 0 R /Courier 5 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 5749 >>
+stream
+BT
+/Courier 8.50 Tf
+54.00 788.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -788.00 Td
+/Courier 8.50 Tf
+54.00 772.50 Td
+(548-560 | parseinfoboxdata\(\) turns simple Label: Value lines into rows used by the article) Tj
+-54.00 -772.50 Td
+/Courier 8.50 Tf
+54.00 760.00 Td
+(infobox. Lines without a colon become labels with empty values.) Tj
+-54.00 -760.00 Td
+/Courier 8.50 Tf
+54.00 744.50 Td
+(563-611 | savearticleimage\(\), saveprofileimage\(\), and savesiteimage\(\) share the safe upload) Tj
+-54.00 -744.50 Td
+/Courier 8.50 Tf
+54.00 732.00 Td
+(pattern: reject empty filenames, sanitize the original name, keep the extension, generate a) Tj
+-54.00 -732.00 Td
+/Courier 8.50 Tf
+54.00 719.50 Td
+(UUID filename, save to the correct folder, and return a static/img-relative path.) Tj
+-54.00 -719.50 Td
+/Courier 8.50 Tf
+54.00 704.00 Td
+(614-621 | syncusernamereferences\(\) updates article author, approval, and revision editor fields) Tj
+-54.00 -704.00 Td
+/Courier 8.50 Tf
+54.00 691.50 Td
+(after a username change.) Tj
+-54.00 -691.50 Td
+/Courier 8.50 Tf
+54.00 676.00 Td
+(624-644 | saveorreplacependingrevision\(\) keeps one pending revision per article, creating it) Tj
+-54.00 -676.00 Td
+/Courier 8.50 Tf
+54.00 663.50 Td
+(when needed and copying the submitted form data into it.) Tj
+-54.00 -663.50 Td
+/Courier 8.50 Tf
+54.00 648.00 Td
+(647-661 | apply_revision\(\) copies reviewed revision fields onto the live article, marks it) Tj
+-54.00 -648.00 Td
+/Courier 8.50 Tf
+54.00 635.50 Td
+(approved, records reviewer metadata, and deletes the revision.) Tj
+-54.00 -635.50 Td
+/Courier 8.50 Tf
+54.00 620.00 Td
+(664-687 | renderarticlepage\(\) renders markdown, parses infobox rows, finds pending revision) Tj
+-54.00 -620.00 Td
+/Courier 8.50 Tf
+54.00 607.50 Td
+(status, builds default infobox rows when needed, and renders article.html.) Tj
+-54.00 -607.50 Td
+/HelveticaBold 15.00 Tf
+54.00 582.00 Td
+(9. Authentication and profile routes) Tj
+-54.00 -582.00 Td
+/Courier 8.50 Tf
+54.00 551.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -551.00 Td
+/Courier 8.50 Tf
+54.00 535.50 Td
+(692-716 | register\(\) validates registration, checks duplicate email and username, hashes the) Tj
+-54.00 -535.50 Td
+/Courier 8.50 Tf
+54.00 523.00 Td
+(password through User.set_password\(\), commits the new user, and redirects to login.) Tj
+-54.00 -523.00 Td
+/Courier 8.50 Tf
+54.00 507.50 Td
+(719-742 | login\(\) validates email/password, blocks archived accounts, calls loginuser\(\), and) Tj
+-54.00 -507.50 Td
+/Courier 8.50 Tf
+54.00 495.00 Td
+(redirects through safenext_url\(\).) Tj
+-54.00 -495.00 Td
+/Courier 8.50 Tf
+54.00 479.50 Td
+(745-751 | logout\(\) requires login, clears the Flask-Login session, flashes success, and) Tj
+-54.00 -479.50 Td
+/Courier 8.50 Tf
+54.00 467.00 Td
+(redirects home.) Tj
+-54.00 -467.00 Td
+/Courier 8.50 Tf
+54.00 451.50 Td
+(754-804 | profile\(\) hosts two forms on one page: profile edits and password changes. It uses) Tj
+-54.00 -451.50 Td
+/Courier 8.50 Tf
+54.00 439.00 Td
+(form_type to decide which branch to validate, handles username uniqueness, optional profile) Tj
+-54.00 -439.00 Td
+/Courier 8.50 Tf
+54.00 426.50 Td
+(image upload, username reference sync, and current-password checks.) Tj
+-54.00 -426.50 Td
+/HelveticaBold 15.00 Tf
+54.00 401.00 Td
+(10. User pages and public browsing routes) Tj
+-54.00 -401.00 Td
+/Courier 8.50 Tf
+54.00 370.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -370.00 Td
+/Courier 8.50 Tf
+54.00 354.50 Td
+(809-845 | my_pages\(\) shows the current user's articles with search, status, archive visibility,) Tj
+-54.00 -354.50 Td
+/Courier 8.50 Tf
+54.00 342.00 Td
+(and sort filters. It also prepares article links for the template.) Tj
+-54.00 -342.00 Td
+/Courier 8.50 Tf
+54.00 326.50 Td
+(848-869 | authors\(\) lists public accounts. By default it shows users with published articles;) Tj
+-54.00 -326.50 Td
+/Courier 8.50 Tf
+54.00 314.00 Td
+(all=1 includes all active users.) Tj
+-54.00 -314.00 Td
+/Courier 8.50 Tf
+54.00 298.50 Td
+(872-884 | public_profile\(\) shows one active user's profile and approved public articles.) Tj
+-54.00 -298.50 Td
+/Courier 8.50 Tf
+54.00 286.00 Td
+(Archived users return 404.) Tj
+-54.00 -286.00 Td
+/Courier 8.50 Tf
+54.00 270.50 Td
+(888-890 | index\(\) renders the home page.) Tj
+-54.00 -270.50 Td
+/Courier 8.50 Tf
+54.00 255.00 Td
+(894-901 | site_search\(\) routes navbar searches: @name goes to author search, everything else) Tj
+-54.00 -255.00 Td
+/Courier 8.50 Tf
+54.00 242.50 Td
+(goes to article search.) Tj
+-54.00 -242.50 Td
+/Courier 8.50 Tf
+54.00 227.00 Td
+(904-911 | about\(\) renders the published page:about-us article, or redirects home with an info) Tj
+-54.00 -227.00 Td
+/Courier 8.50 Tf
+54.00 214.50 Td
+(message if none exists.) Tj
+-54.00 -214.50 Td
+/Courier 8.50 Tf
+54.00 199.00 Td
+(914-921 | tagged_article\(\) renders a reserved tag-backed wiki page such as /wiki/levels or) Tj
+-54.00 -199.00 Td
+/Courier 8.50 Tf
+54.00 186.50 Td
+(/wiki/lore.) Tj
+-54.00 -186.50 Td
+/Courier 8.50 Tf
+54.00 171.00 Td
+(924-944 | articles\(\) lists approved public articles, filters out articles with inactive) Tj
+-54.00 -171.00 Td
+/Courier 8.50 Tf
+54.00 158.50 Td
+(authors, applies optional search, and sends links/author data to articles.html.) Tj
+-54.00 -158.50 Td
+/HelveticaBold 15.00 Tf
+54.00 133.00 Td
+(11. Article creation and editing) Tj
+-54.00 -133.00 Td
+/Courier 8.50 Tf
+54.00 102.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -102.00 Td
+/Courier 8.50 Tf
+54.00 86.50 Td
+(949-995 | create_article\(\) validates ArticleForm, checks title uniqueness, normalizes tags,) Tj
+-54.00 -86.50 Td
+/Courier 8.50 Tf
+54.00 74.00 Td
+(saves an uploaded image or uses default.png, creates a pending Article, commits it, and) Tj
+-54.00 -74.00 Td
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /Helvetica 3 0 R /HelveticaBold 4 0 R /Courier 5 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 5438 >>
+stream
+BT
+/Courier 8.50 Tf
+54.00 788.00 Td
+(redirects to the user's pages unless it is immediately public.) Tj
+-54.00 -788.00 Td
+/Courier 8.50 Tf
+54.00 772.50 Td
+(998-1067 | edit_article\(\) loads an article, blocks archived or unauthorized edits, pre-fills) Tj
+-54.00 -772.50 Td
+/Courier 8.50 Tf
+54.00 760.00 Td
+(the form from an existing pending revision when present, checks duplicate titles, handles) Tj
+-54.00 -760.00 Td
+/Courier 8.50 Tf
+54.00 747.50 Td
+(uploaded/removed images, and either updates the live row directly for admins/writers or stores) Tj
+-54.00 -747.50 Td
+/Courier 8.50 Tf
+54.00 735.00 Td
+(a pending revision for normal users.) Tj
+-54.00 -735.00 Td
+/Courier 8.50 Tf
+54.00 719.50 Td
+(1033-1040 | Image selection rules: a new upload wins; otherwise a remove request resets to) Tj
+-54.00 -719.50 Td
+/Courier 8.50 Tf
+54.00 707.00 Td
+(default.png; otherwise the old image is kept.) Tj
+-54.00 -707.00 Td
+/Courier 8.50 Tf
+54.00 691.50 Td
+(1042-1058 | Trusted editors update the live article directly. Normal users submit a pending) Tj
+-54.00 -691.50 Td
+/Courier 8.50 Tf
+54.00 679.00 Td
+(ArticleRevision for review.) Tj
+-54.00 -679.00 Td
+/Courier 8.50 Tf
+54.00 663.50 Td
+(1060-1065 | After commit, image cleanup runs when the image changed, then the user is) Tj
+-54.00 -663.50 Td
+/Courier 8.50 Tf
+54.00 651.00 Td
+(redirected to the public article if visible or back to my_pages.) Tj
+-54.00 -651.00 Td
+/HelveticaBold 15.00 Tf
+54.00 625.50 Td
+(12. Dashboard routes) Tj
+-54.00 -625.50 Td
+/Courier 8.50 Tf
+54.00 594.50 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -594.50 Td
+/Courier 8.50 Tf
+54.00 579.00 Td
+(1072-1076 | /dashboard is admin-only and redirects to the user dashboard.) Tj
+-54.00 -579.00 Td
+/Courier 8.50 Tf
+54.00 563.50 Td
+(1079-1119 | dashboard_users\(\) is admin-only. It applies search, role, archive, and sort) Tj
+-54.00 -563.50 Td
+/Courier 8.50 Tf
+54.00 551.00 Td
+(filters; computes published article counts; creates RoleForm; and renders the user dashboard.) Tj
+-54.00 -551.00 Td
+/Courier 8.50 Tf
+54.00 535.50 Td
+(1122-1161 | dashboard_articles\(\) is admin/writer-only. It filters articles by archive state,) Tj
+-54.00 -535.50 Td
+/Courier 8.50 Tf
+54.00 523.00 Td
+(status, search text, and sort order, then prepares public links and author data.) Tj
+-54.00 -523.00 Td
+/Courier 8.50 Tf
+54.00 507.50 Td
+(1164-1196 | dashboard_updates\(\) lists pending revisions with search and sorting, then prepares) Tj
+-54.00 -507.50 Td
+/Courier 8.50 Tf
+54.00 495.00 Td
+(article links for the updates dashboard.) Tj
+-54.00 -495.00 Td
+/Courier 8.50 Tf
+54.00 479.50 Td
+(1199-1216 | dashboard_settings\(\) lets admins upload the site/community banner image.) Tj
+-54.00 -479.50 Td
+/Courier 8.50 Tf
+54.00 464.00 Td
+(1219-1227 | removeherobanner\(\) clears the banner image from site settings.) Tj
+-54.00 -464.00 Td
+/HelveticaBold 15.00 Tf
+54.00 438.50 Td
+(13. Admin and reviewer actions) Tj
+-54.00 -438.50 Td
+/Courier 8.50 Tf
+54.00 407.50 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -407.50 Td
+/Courier 8.50 Tf
+54.00 392.00 Td
+(1232-1259 | set_role\(\) changes a user's role while protecting MainAdmin, archived users, the) Tj
+-54.00 -392.00 Td
+/Courier 8.50 Tf
+54.00 379.50 Td
+(current admin's own account, and admin-role boundaries.) Tj
+-54.00 -379.50 Td
+/Courier 8.50 Tf
+54.00 364.00 Td
+(1262-1281 | togglearchiveuser\(\) deactivates/reactivates users while blocking MainAdmin, self-) Tj
+-54.00 -364.00 Td
+/Courier 8.50 Tf
+54.00 351.50 Td
+(archive, and non-MainAdmin archive of other admins.) Tj
+-54.00 -351.50 Td
+/Courier 8.50 Tf
+54.00 336.00 Td
+(1284-1306 | approve\(\) approves a new article or applies its latest pending revision, then) Tj
+-54.00 -336.00 Td
+/Courier 8.50 Tf
+54.00 323.50 Td
+(records approval metadata.) Tj
+-54.00 -323.50 Td
+/Courier 8.50 Tf
+54.00 308.00 Td
+(1309-1323 | decline\(\) marks an article declined and records reviewer metadata.) Tj
+-54.00 -308.00 Td
+/Courier 8.50 Tf
+54.00 292.50 Td
+(1326-1342 | approve_revision\(\) checks for duplicate titles, applies the revision, commits, and) Tj
+-54.00 -292.50 Td
+/Courier 8.50 Tf
+54.00 280.00 Td
+(returns to the update dashboard.) Tj
+-54.00 -280.00 Td
+/Courier 8.50 Tf
+54.00 264.50 Td
+(1345-1354 | decline_revision\(\) deletes a pending revision without changing the live article.) Tj
+-54.00 -264.50 Td
+/Courier 8.50 Tf
+54.00 249.00 Td
+(1357-1366 | togglearchivearticle\(\) lets admins/writers archive or restore articles from the) Tj
+-54.00 -249.00 Td
+/Courier 8.50 Tf
+54.00 236.50 Td
+(reviewer dashboard.) Tj
+-54.00 -236.50 Td
+/Courier 8.50 Tf
+54.00 221.00 Td
+(1369-1384 | archiveownarticle\(\) lets owners archive/restore their own articles; archiving) Tj
+-54.00 -221.00 Td
+/Courier 8.50 Tf
+54.00 208.50 Td
+(discards pending revisions.) Tj
+-54.00 -208.50 Td
+/HelveticaBold 15.00 Tf
+54.00 183.00 Td
+(14. Final public article route) Tj
+-54.00 -183.00 Td
+/Courier 8.50 Tf
+54.00 152.00 Td
+(Lines | What those lines do / why they matter) Tj
+-54.00 -152.00 Td
+/Courier 8.50 Tf
+54.00 136.50 Td
+(1389-1398 | article\(\) loads a non-archived article by exact title, rejects non-public articles,) Tj
+-54.00 -136.50 Td
+/Courier 8.50 Tf
+54.00 124.00 Td
+(redirects the reserved about page to /about, and renders normal articles through) Tj
+-54.00 -124.00 Td
+/Courier 8.50 Tf
+54.00 111.50 Td
+(renderarticlepage\(\).) Tj
+-54.00 -111.50 Td
+/HelveticaBold 15.00 Tf
+54.00 86.00 Td
+(15. Complete function and route index) Tj
+-54.00 -86.00 Td
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /Helvetica 3 0 R /HelveticaBold 4 0 R /Courier 5 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 5961 >>
+stream
+BT
+/Courier 8.50 Tf
+54.00 788.00 Td
+(Name | Lines | Route/decorators | Purpose) Tj
+-54.00 -788.00 Td
+/Courier 8.50 Tf
+54.00 772.50 Td
+(cleanupunusedimages | 46-81 | - | Remove uploaded image files no longer referenced by the) Tj
+-54.00 -772.50 Td
+/Courier 8.50 Tf
+54.00 760.00 Td
+(database.) Tj
+-54.00 -760.00 Td
+/Courier 8.50 Tf
+54.00 744.50 Td
+(ensureuserprofile_columns | 84-95 | - | Add profile columns to older SQLite databases.) Tj
+-54.00 -744.50 Td
+/Courier 8.50 Tf
+54.00 729.00 Td
+(getsitesettings | 98-105 | - | Return/create singleton site settings row.) Tj
+-54.00 -729.00 Td
+/Courier 8.50 Tf
+54.00 713.50 Td
+(handleuploadtoo_large | 127-130 | @app.errorhandler\(RequestEntityTooLarge\) | Show friendly) Tj
+-54.00 -713.50 Td
+/Courier 8.50 Tf
+54.00 701.00 Td
+(upload-size error.) Tj
+-54.00 -701.00 Td
+/Courier 8.50 Tf
+54.00 685.50 Td
+(injectsitesettings | 134-146 | @app.context_processor | Expose site settings and dashboard) Tj
+-54.00 -685.50 Td
+/Courier 8.50 Tf
+54.00 673.00 Td
+(counters to templates.) Tj
+-54.00 -673.00 Td
+/Courier 8.50 Tf
+54.00 657.50 Td
+(load_user | 150-155 | @loginmanager.userloader | Load active users for Flask-Login sessions.) Tj
+-54.00 -657.50 Td
+/Courier 8.50 Tf
+54.00 642.00 Td
+(role_required | 158-171 | - | Decorator factory for role-protected routes.) Tj
+-54.00 -642.00 Td
+/Courier 8.50 Tf
+54.00 626.50 Td
+(issaferedirect_url | 174-180 | - | Prevent open redirects.) Tj
+-54.00 -626.50 Td
+/Courier 8.50 Tf
+54.00 611.00 Td
+(safenexturl | 183-188 | - | Resolve safe next URL or default endpoint.) Tj
+-54.00 -611.00 Td
+/Courier 8.50 Tf
+54.00 595.50 Td
+(dashboardreturnurl | 191-196 | - | Return to safe dashboard filter URL after POST.) Tj
+-54.00 -595.50 Td
+/Courier 8.50 Tf
+54.00 580.00 Td
+(inlinemarkdown | 201-222 | - | Render safe inline markdown subset.) Tj
+-54.00 -580.00 Td
+/Courier 8.50 Tf
+54.00 564.50 Td
+(rendersimplemarkdown | 225-329 | - | Render safe block markdown subset.) Tj
+-54.00 -564.50 Td
+/Courier 8.50 Tf
+54.00 549.00 Td
+(articlepublicurl | 334-338 | - | Resolve normal or reserved article URL.) Tj
+-54.00 -549.00 Td
+/Courier 8.50 Tf
+54.00 533.50 Td
+(normalize_identity | 341-344 | - | Normalize author/user names for matching.) Tj
+-54.00 -533.50 Td
+/Courier 8.50 Tf
+54.00 518.00 Td
+(finduserforarticleauthor | 347-371 | - | Resolve article author text to active user.) Tj
+-54.00 -518.00 Td
+/Courier 8.50 Tf
+54.00 502.50 Td
+(articleispublic | 374-378 | - | Apply public article visibility rules.) Tj
+-54.00 -502.50 Td
+/Courier 8.50 Tf
+54.00 487.00 Td
+(canopenarticle | 381-383 | - | Public article-open guard.) Tj
+-54.00 -487.00 Td
+/Courier 8.50 Tf
+54.00 471.50 Td
+(staticpagetag | 386-388 | - | Create reserved page tag.) Tj
+-54.00 -471.50 Td
+/Courier 8.50 Tf
+54.00 456.00 Td
+(articlehastag | 391-394 | - | Case-insensitive tag lookup.) Tj
+-54.00 -456.00 Td
+/Courier 8.50 Tf
+54.00 440.50 Td
+(tagsearchneedle | 397-402 | - | Parse #tag search syntax.) Tj
+-54.00 -440.50 Td
+/Courier 8.50 Tf
+54.00 425.00 Td
+(articlematchessearch | 405-422 | - | Match articles by text or tags.) Tj
+-54.00 -425.00 Td
+/Courier 8.50 Tf
+54.00 409.50 Td
+(usermatchespublic_search | 425-437 | - | Match users by public fields.) Tj
+-54.00 -409.50 Td
+/Courier 8.50 Tf
+54.00 394.00 Td
+(activeusersby_username | 440-447 | - | Resolve active users from author names.) Tj
+-54.00 -394.00 Td
+/Courier 8.50 Tf
+54.00 378.50 Td
+(publicarticlesfor_user | 450-460 | - | Return public articles for one user.) Tj
+-54.00 -378.50 Td
+/Courier 8.50 Tf
+54.00 363.00 Td
+(publishedarticlecountsbyuser | 463-474 | - | Count public articles by active resolved user.) Tj
+-54.00 -363.00 Td
+/Courier 8.50 Tf
+54.00 347.50 Td
+(revisionmatchessearch | 477-494 | - | Match pending revisions by text or tags.) Tj
+-54.00 -347.50 Td
+/Courier 8.50 Tf
+54.00 332.00 Td
+(findpublishedarticlebytag | 498-511 | - | Find public article for reserved page tag.) Tj
+-54.00 -332.00 Td
+/Courier 8.50 Tf
+54.00 316.50 Td
+(normalizearticletags | 515-531 | - | Normalize tags and protect page:*.) Tj
+-54.00 -316.50 Td
+/Courier 8.50 Tf
+54.00 301.00 Td
+(caneditarticle | 534-543 | - | Enforce edit permissions.) Tj
+-54.00 -301.00 Td
+/Courier 8.50 Tf
+54.00 285.50 Td
+(parseinfoboxdata | 548-560 | - | Parse infobox rows.) Tj
+-54.00 -285.50 Td
+/Courier 8.50 Tf
+54.00 270.00 Td
+(savearticleimage | 563-577 | - | Store article image upload.) Tj
+-54.00 -270.00 Td
+/Courier 8.50 Tf
+54.00 254.50 Td
+(saveprofileimage | 580-594 | - | Store profile image upload.) Tj
+-54.00 -254.50 Td
+/Courier 8.50 Tf
+54.00 239.00 Td
+(savesiteimage | 597-611 | - | Store site/banner image upload.) Tj
+-54.00 -239.00 Td
+/Courier 8.50 Tf
+54.00 223.50 Td
+(syncusernamereferences | 614-621 | - | Update username references after rename.) Tj
+-54.00 -223.50 Td
+/Courier 8.50 Tf
+54.00 208.00 Td
+(saveorreplacependingrevision | 624-644 | - | Keep one pending revision per article.) Tj
+-54.00 -208.00 Td
+/Courier 8.50 Tf
+54.00 192.50 Td
+(apply_revision | 647-661 | - | Promote revision into live article.) Tj
+-54.00 -192.50 Td
+/Courier 8.50 Tf
+54.00 177.00 Td
+(renderarticlepage | 664-687 | - | Build data for article template.) Tj
+-54.00 -177.00 Td
+/Courier 8.50 Tf
+54.00 161.50 Td
+(register | 692-716 | /register GET/POST | Create account.) Tj
+-54.00 -161.50 Td
+/Courier 8.50 Tf
+54.00 146.00 Td
+(login | 719-742 | /login GET/POST | Authenticate account.) Tj
+-54.00 -146.00 Td
+/Courier 8.50 Tf
+54.00 130.50 Td
+(logout | 745-751 | /logout, login required | End session.) Tj
+-54.00 -130.50 Td
+/Courier 8.50 Tf
+54.00 115.00 Td
+(profile | 754-804 | /profile GET/POST, login required | Edit profile or password.) Tj
+-54.00 -115.00 Td
+/Courier 8.50 Tf
+54.00 99.50 Td
+(my_pages | 809-845 | /my-pages, login required | Show user's own articles.) Tj
+-54.00 -99.50 Td
+/Courier 8.50 Tf
+54.00 84.00 Td
+(authors | 848-869 | /authors | Browse/search public users.) Tj
+-54.00 -84.00 Td
+/Courier 8.50 Tf
+54.00 68.50 Td
+(public_profile | 872-884 | /authors/<username> | Show public profile and articles.) Tj
+-54.00 -68.50 Td
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /Helvetica 3 0 R /HelveticaBold 4 0 R /Courier 5 0 R >> >> /Contents 16 0 R >>
+endobj
+18 0 obj
+<< /Length 4997 >>
+stream
+BT
+/Courier 8.50 Tf
+54.00 788.00 Td
+(index | 888-890 | / | Home page.) Tj
+-54.00 -788.00 Td
+/Courier 8.50 Tf
+54.00 772.50 Td
+(site_search | 894-901 | /search | Route search to authors or articles.) Tj
+-54.00 -772.50 Td
+/Courier 8.50 Tf
+54.00 757.00 Td
+(about | 904-911 | /about | Render reserved about article.) Tj
+-54.00 -757.00 Td
+/Courier 8.50 Tf
+54.00 741.50 Td
+(tagged_article | 914-921 | /wiki/<tag> | Render reserved tag-backed article.) Tj
+-54.00 -741.50 Td
+/Courier 8.50 Tf
+54.00 726.00 Td
+(articles | 924-944 | /articles | Browse public articles.) Tj
+-54.00 -726.00 Td
+/Courier 8.50 Tf
+54.00 710.50 Td
+(create_article | 949-995 | /articles/new GET/POST, login required | Create pending article.) Tj
+-54.00 -710.50 Td
+/Courier 8.50 Tf
+54.00 695.00 Td
+(edit_article | 998-1067 | /articles/<id>/edit GET/POST, login required | Edit live article or) Tj
+-54.00 -695.00 Td
+/Courier 8.50 Tf
+54.00 682.50 Td
+(submit revision.) Tj
+-54.00 -682.50 Td
+/Courier 8.50 Tf
+54.00 667.00 Td
+(dashboard | 1072-1076 | /dashboard, admin | Redirect to dashboard users.) Tj
+-54.00 -667.00 Td
+/Courier 8.50 Tf
+54.00 651.50 Td
+(dashboard_users | 1079-1119 | /dashboard/users, admin | Manage users and roles.) Tj
+-54.00 -651.50 Td
+/Courier 8.50 Tf
+54.00 636.00 Td
+(dashboard_articles | 1122-1161 | /dashboard/articles, admin/writer | Review and manage) Tj
+-54.00 -636.00 Td
+/Courier 8.50 Tf
+54.00 623.50 Td
+(articles.) Tj
+-54.00 -623.50 Td
+/Courier 8.50 Tf
+54.00 608.00 Td
+(dashboard_updates | 1164-1196 | /dashboard/updates, admin/writer | Review pending updates.) Tj
+-54.00 -608.00 Td
+/Courier 8.50 Tf
+54.00 592.50 Td
+(dashboard_settings | 1199-1216 | /dashboard/settings GET/POST, admin | Manage site banner.) Tj
+-54.00 -592.50 Td
+/Courier 8.50 Tf
+54.00 577.00 Td
+(removeherobanner | 1219-1227 | /dashboard/settings/banner/remove, admin | Remove site banner.) Tj
+-54.00 -577.00 Td
+/Courier 8.50 Tf
+54.00 561.50 Td
+(setrole | 1232-1259 | /set-role/<userid> POST, admin | Change user role.) Tj
+-54.00 -561.50 Td
+/Courier 8.50 Tf
+54.00 546.00 Td
+(togglearchiveuser | 1262-1281 | /users/<user_id>/toggle-archive POST, admin |) Tj
+-54.00 -546.00 Td
+/Courier 8.50 Tf
+54.00 533.50 Td
+(Deactivate/reactivate user.) Tj
+-54.00 -533.50 Td
+/Courier 8.50 Tf
+54.00 518.00 Td
+(approve | 1284-1306 | /approve/<article_id> POST, admin/writer | Approve article or latest) Tj
+-54.00 -518.00 Td
+/Courier 8.50 Tf
+54.00 505.50 Td
+(revision.) Tj
+-54.00 -505.50 Td
+/Courier 8.50 Tf
+54.00 490.00 Td
+(decline | 1309-1323 | /decline/<article_id> POST, admin/writer | Decline article.) Tj
+-54.00 -490.00 Td
+/Courier 8.50 Tf
+54.00 474.50 Td
+(approverevision | 1326-1342 | /revisions/<revisionid>/approve POST, admin/writer | Approve) Tj
+-54.00 -474.50 Td
+/Courier 8.50 Tf
+54.00 462.00 Td
+(pending revision.) Tj
+-54.00 -462.00 Td
+/Courier 8.50 Tf
+54.00 446.50 Td
+(declinerevision | 1345-1354 | /revisions/<revisionid>/decline POST, admin/writer | Discard) Tj
+-54.00 -446.50 Td
+/Courier 8.50 Tf
+54.00 434.00 Td
+(pending revision.) Tj
+-54.00 -434.00 Td
+/Courier 8.50 Tf
+54.00 418.50 Td
+(togglearchivearticle | 1357-1366 | /articles/<article_id>/toggle-archive POST, admin/writer |) Tj
+-54.00 -418.50 Td
+/Courier 8.50 Tf
+54.00 406.00 Td
+(Archive/restore article.) Tj
+-54.00 -406.00 Td
+/Courier 8.50 Tf
+54.00 390.50 Td
+(archiveownarticle | 1369-1384 | /articles/<article_id>/archive-own POST, login required | Owner) Tj
+-54.00 -390.50 Td
+/Courier 8.50 Tf
+54.00 378.00 Td
+(archive/restore action.) Tj
+-54.00 -378.00 Td
+/Courier 8.50 Tf
+54.00 362.50 Td
+(article | 1389-1398 | /article/<article_title> | Render one public article.) Tj
+-54.00 -362.50 Td
+/HelveticaBold 15.00 Tf
+54.00 337.00 Td
+(16. Important workflows in plain language) Tj
+-54.00 -337.00 Td
+/HelveticaBold 13.00 Tf
+54.00 302.00 Td
+(A. Creating a new article) Tj
+-54.00 -302.00 Td
+/Helvetica 9.50 Tf
+68.00 275.00 Td
+(- User opens /articles/new.) Tj
+-68.00 -275.00 Td
+/Helvetica 9.50 Tf
+68.00 257.50 Td
+(- ArticleForm validates title, content, summary, infobox, image, and tags.) Tj
+-68.00 -257.50 Td
+/Helvetica 9.50 Tf
+68.00 240.00 Td
+(- Title uniqueness is checked before insert.) Tj
+-68.00 -240.00 Td
+/Helvetica 9.50 Tf
+68.00 222.50 Td
+(- Tags are normalized; reserved page:* tags are blocked for normal users.) Tj
+-68.00 -222.50 Td
+/Helvetica 9.50 Tf
+68.00 205.00 Td
+(- Image is saved or default.png is used.) Tj
+-68.00 -205.00 Td
+/Helvetica 9.50 Tf
+68.00 187.50 Td
+(- Article is saved with status='pending'.) Tj
+-68.00 -187.50 Td
+/Helvetica 9.50 Tf
+68.00 170.00 Td
+(- A reviewer later approves it before it becomes public.) Tj
+-68.00 -170.00 Td
+/HelveticaBold 13.00 Tf
+54.00 144.50 Td
+(B. Editing an article) Tj
+-54.00 -144.50 Td
+/Helvetica 9.50 Tf
+68.00 117.50 Td
+(- Archived articles cannot be edited.) Tj
+-68.00 -117.50 Td
+/Helvetica 9.50 Tf
+68.00 100.00 Td
+(- The current user must be admin, writer, or article owner.) Tj
+-68.00 -100.00 Td
+/Helvetica 9.50 Tf
+68.00 82.50 Td
+(- Existing pending revision data is used to prefill the form when present.) Tj
+-68.00 -82.50 Td
+ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /Helvetica 3 0 R /HelveticaBold 4 0 R /Courier 5 0 R >> >> /Contents 18 0 R >>
+endobj
+20 0 obj
+<< /Length 4566 >>
+stream
+BT
+/Helvetica 9.50 Tf
+68.00 788.00 Td
+(- Admins and writers update the live article directly.) Tj
+-68.00 -788.00 Td
+/Helvetica 9.50 Tf
+68.00 770.50 Td
+(- Normal users create or replace one pending ArticleRevision.) Tj
+-68.00 -770.50 Td
+/Helvetica 9.50 Tf
+68.00 753.00 Td
+(- Approved public articles redirect back to their public page after edit.) Tj
+-68.00 -753.00 Td
+/HelveticaBold 13.00 Tf
+54.00 727.50 Td
+(C. Showing a public article) Tj
+-54.00 -727.50 Td
+/Helvetica 9.50 Tf
+68.00 700.50 Td
+(- Article must exist and not be archived.) Tj
+-68.00 -700.50 Td
+/Helvetica 9.50 Tf
+68.00 683.00 Td
+(- Article status must be approved.) Tj
+-68.00 -683.00 Td
+/Helvetica 9.50 Tf
+68.00 665.50 Td
+(- Author must resolve to an active, non-archived user.) Tj
+-68.00 -665.50 Td
+/Helvetica 9.50 Tf
+68.00 648.00 Td
+(- Content is converted through the safe markdown renderer.) Tj
+-68.00 -648.00 Td
+/Helvetica 9.50 Tf
+68.00 630.50 Td
+(- Template receives rendered content, infobox rows, author data, edit permission, public link,) Tj
+-68.00 -630.50 Td
+/Helvetica 9.50 Tf
+68.00 617.00 Td
+(  and pending revision information.) Tj
+-68.00 -617.00 Td
+/HelveticaBold 13.00 Tf
+54.00 591.50 Td
+(D. Admin safety rules) Tj
+-54.00 -591.50 Td
+/Helvetica 9.50 Tf
+68.00 564.50 Td
+(- MainAdmin cannot be archived or have role changed.) Tj
+-68.00 -564.50 Td
+/Helvetica 9.50 Tf
+68.00 547.00 Td
+(- Admins cannot archive themselves or change their own role.) Tj
+-68.00 -547.00 Td
+/Helvetica 9.50 Tf
+68.00 529.50 Td
+(- Only MainAdmin can add or remove admin privileges.) Tj
+-68.00 -529.50 Td
+/Helvetica 9.50 Tf
+68.00 512.00 Td
+(- Archived users cannot log in, and their articles are not public.) Tj
+-68.00 -512.00 Td
+/HelveticaBold 15.00 Tf
+54.00 484.50 Td
+(17. Security and robustness notes) Tj
+-54.00 -484.50 Td
+/Courier 8.50 Tf
+54.00 453.50 Td
+(Area | Good practice in this code | Potential improvement) Tj
+-54.00 -453.50 Td
+/Courier 8.50 Tf
+54.00 438.00 Td
+(Markdown rendering | Escapes raw HTML and supports only a limited tag set. | Use a tested) Tj
+-54.00 -438.00 Td
+/Courier 8.50 Tf
+54.00 425.50 Td
+(markdown library plus sanitizer if markdown features grow.) Tj
+-54.00 -425.50 Td
+/Courier 8.50 Tf
+54.00 410.00 Td
+(Redirects | Checks host before redirecting to next or referrer. | Continue routing all user-) Tj
+-54.00 -410.00 Td
+/Courier 8.50 Tf
+54.00 397.50 Td
+(controlled redirects through the safe helpers.) Tj
+-54.00 -397.50 Td
+/Courier 8.50 Tf
+54.00 382.00 Td
+(Uploads | Uses secure_filename, UUID names, WTForms extension checks, and file-size checks. |) Tj
+-54.00 -382.00 Td
+/Courier 8.50 Tf
+54.00 369.50 Td
+(Add MIME/content validation for stronger image-only enforcement.) Tj
+-54.00 -369.50 Td
+/Courier 8.50 Tf
+54.00 354.00 Td
+(Secret key | Configured in Flask app config. | Move SECRET_KEY to an environment variable) Tj
+-54.00 -354.00 Td
+/Courier 8.50 Tf
+54.00 341.50 Td
+(before deployment.) Tj
+-54.00 -341.50 Td
+/Courier 8.50 Tf
+54.00 326.00 Td
+(Database migrations | Small SQLite compatibility migration exists. | Use Flask-Migrate/Alembic) Tj
+-54.00 -326.00 Td
+/Courier 8.50 Tf
+54.00 313.50 Td
+(if schema changes keep growing.) Tj
+-54.00 -313.50 Td
+/Courier 8.50 Tf
+54.00 298.00 Td
+(Authorization | Route decorators and ownership checks are explicit. | Review whether writers) Tj
+-54.00 -298.00 Td
+/Courier 8.50 Tf
+54.00 285.50 Td
+(should approve all content or only scoped content, depending on moderation policy.) Tj
+-54.00 -285.50 Td
+/HelveticaBold 15.00 Tf
+54.00 260.00 Td
+(18. Short glossary) Tj
+-54.00 -260.00 Td
+/Courier 8.50 Tf
+54.00 229.00 Td
+(Term | Meaning in this app) Tj
+-54.00 -229.00 Td
+/Courier 8.50 Tf
+54.00 213.50 Td
+(Article | Main wiki page record. Can be pending, approved, declined, or archived.) Tj
+-54.00 -213.50 Td
+/Courier 8.50 Tf
+54.00 198.00 Td
+(ArticleRevision | Pending edit proposal for an existing article.) Tj
+-54.00 -198.00 Td
+/Courier 8.50 Tf
+54.00 182.50 Td
+(Archived | Hidden/deactivated but not deleted.) Tj
+-54.00 -182.50 Td
+/Courier 8.50 Tf
+54.00 167.00 Td
+(Reserved page tag | A special tag like page:about-us that connects an article to a static) Tj
+-54.00 -167.00 Td
+/Courier 8.50 Tf
+54.00 154.50 Td
+(route.) Tj
+-54.00 -154.50 Td
+/Courier 8.50 Tf
+54.00 139.00 Td
+(Flask-Login | Library that manages logged-in sessions and current_user.) Tj
+-54.00 -139.00 Td
+/Courier 8.50 Tf
+54.00 123.50 Td
+(Decorator | Function wrapper placed above a route to add behavior such as login or role checks.) Tj
+-54.00 -123.50 Td
+/Courier 8.50 Tf
+54.00 108.00 Td
+(Flash message | Temporary message shown to the user after an action.) Tj
+-54.00 -108.00 Td
+ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /Helvetica 3 0 R /HelveticaBold 4 0 R /Courier 5 0 R >> >> /Contents 20 0 R >>
+endobj
+xref
+0 22
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000169 00000 n 
+0000000239 00000 n 
+0000000314 00000 n 
+0000000382 00000 n 
+0000005690 00000 n 
+0000005859 00000 n 
+0000011483 00000 n 
+0000011652 00000 n 
+0000017450 00000 n 
+0000017621 00000 n 
+0000023423 00000 n 
+0000023594 00000 n 
+0000029085 00000 n 
+0000029256 00000 n 
+0000035270 00000 n 
+0000035441 00000 n 
+0000040491 00000 n 
+0000040662 00000 n 
+0000045281 00000 n 
+trailer
+<< /Size 22 /Root 1 0 R >>
+startxref
+45452
+%%EOF

@@ -41,8 +41,11 @@ app.config['SITE_UPLOAD_FOLDER'] = 'static/img/site'
 db.init_app(app)
 
 
+# --- Startup and maintenance helpers ---
+
 def cleanup_unused_images():
     """Remove uploaded image files that are no longer referenced by the database."""
+    # Build the set of database paths that are still in use before touching disk.
     referenced_paths = {
         image_path
         for image_path, in db.session.query(Article.image_url).filter(Article.image_url.isnot(None)).all()
@@ -61,6 +64,7 @@ def cleanup_unused_images():
     )
     referenced_paths.discard('default.png')
 
+    # Database values are stored as paths relative to static/img, grouped by upload type.
     managed_dirs = {
         'upload': app.config['UPLOAD_FOLDER'],
         'profile': app.config['PROFILE_UPLOAD_FOLDER'],
@@ -117,6 +121,8 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 
+# --- Request-wide handlers and authorization helpers ---
+
 @app.errorhandler(RequestEntityTooLarge)
 def handle_upload_too_large(error):
     """Show a friendly message when an upload exceeds the global request limit."""
@@ -155,6 +161,7 @@ def role_required(role_names: list):
         @wraps(func)
         @login_required
         def wrapper(*args, **kwargs):
+            # Flask-Login guarantees a user exists here; this check enforces the allowed roles.
             if current_user.role not in role_names:
                 abort(403)
             return func(*args, **kwargs)
@@ -189,11 +196,14 @@ def dashboard_return_url(default_endpoint):
     return url_for(default_endpoint)
 
 
+# --- Safe limited markdown rendering ---
+
 def _inline_markdown(text: str) -> str:
     """Render the small inline markdown subset used in article content."""
     code_spans = []
 
     def stash_code(match):
+        # Code text is escaped before the full line is escaped, then restored later.
         code_spans.append(f"<code>{html.escape(match.group(1))}</code>")
         return f"@@CODE{len(code_spans) - 1}@@"
 
@@ -227,6 +237,7 @@ def render_simple_markdown(raw_text: str) -> str:
     code_lines = []
 
     def close_lists():
+        """Close any open list before switching to another block type."""
         nonlocal in_ul, in_ol
         if in_ul:
             blocks.append('</ul>')
@@ -236,11 +247,13 @@ def render_simple_markdown(raw_text: str) -> str:
             in_ol = False
 
     def flush_paragraph():
+        """Render buffered normal text as one paragraph."""
         if paragraph:
             blocks.append(f"<p>{_inline_markdown(' '.join(paragraph))}</p>")
             paragraph.clear()
 
     def flush_code():
+        """Render collected fenced-code lines without parsing markdown inside them."""
         if code_lines:
             code_text = '\n'.join(code_lines)
             blocks.append(f"<pre><code>{html.escape(code_text)}</code></pre>")
@@ -316,6 +329,8 @@ def render_simple_markdown(raw_text: str) -> str:
     return '\n'.join(blocks)
 
 
+# --- Article identity, visibility, search, and reserved pages ---
+
 def article_public_url(article_obj: Article) -> str:
     """Resolve the public URL for normal articles and reserved static-page tags."""
     if article_has_tag(article_obj, static_page_tag('about-us')):
@@ -364,6 +379,7 @@ def article_is_public(article_obj: Article) -> bool:
 
 
 def can_open_article(article_obj: Article) -> bool:
+    """Return whether an anonymous/public request may open the article page."""
     return article_is_public(article_obj)
 
 
@@ -527,6 +543,8 @@ def can_edit_article(article_obj: Article) -> bool:
     return article_obj.author == current_user.username
 
 
+# --- Upload, revision, and rendering helpers ---
+
 def parse_infobox_data(raw_data: str):
     """Parse simple 'Label: Value' lines into infobox rows."""
     rows = []
@@ -605,6 +623,7 @@ def sync_username_references(old_username: str, new_username: str):
 
 def save_or_replace_pending_revision(article_obj, form, parsed_tags, image_path):
     """Keep a single pending revision per article until review."""
+    # Replacing the open pending revision prevents stacked unreviewed edits for one article.
     revision = ArticleRevision.query.filter_by(
         article_id=article_obj.id,
         status='pending',
@@ -628,6 +647,7 @@ def save_or_replace_pending_revision(article_obj, form, parsed_tags, image_path)
 def apply_revision(revision):
     """Promote a pending revision into the live article record."""
     article_obj = revision.article
+    # The revision is the reviewed source of truth; copy it onto the live article row.
     article_obj.title = revision.title
     article_obj.summary = revision.summary
     article_obj.content = revision.content
@@ -666,6 +686,8 @@ def render_article_page(article_obj: Article):
         pending_revision=pending_revision,
     )
 
+
+# --- Authentication and profile routes ---
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -740,6 +762,7 @@ def profile():
         form_type = request.form.get('form_type')
 
         if form_type == 'profile':
+            # Recreate the form from submitted data so validation errors reflect the POST payload.
             profile_form = ProfileForm()
             if profile_form.validate_on_submit():
                 new_username = profile_form.username.data.strip()
@@ -780,6 +803,8 @@ def profile():
         password_form=password_form,
     )
 
+
+# --- User pages and public browsing routes ---
 
 @app.route('/my-pages')
 @login_required
@@ -871,6 +896,7 @@ def site_search():
     """Navbar search router: @queries search accounts, all others search articles."""
     search = (request.args.get('q') or '').strip()
     if search.startswith('@'):
+        # @username searches intentionally include users without published articles.
         return redirect(url_for('authors', q=search[1:].strip(), all='1'))
     return redirect(url_for('articles', q=search))
 
@@ -918,6 +944,8 @@ def articles():
     )
 
 
+# --- Article creation and editing ---
+
 @app.route('/articles/new', methods=['GET', 'POST'])
 @login_required
 def create_article():
@@ -953,6 +981,7 @@ def create_article():
         )
 
         try:
+            # Database constraints are still the final authority for unique titles and field sizes.
             db.session.add(article_obj)
             db.session.commit()
             flash('Article created successfully.', 'success')
@@ -1011,6 +1040,7 @@ def edit_article(article_id):
             image_path = article_obj.image_url or 'default.png'
 
         if current_user.role in ['admin', 'writer']:
+            # Trusted editors update the live row directly; user edits go through revisions.
             article_obj.title = normalized_title
             article_obj.summary = (form.summary.data or '').strip()
             article_obj.content = form.content.data.strip()
@@ -1036,6 +1066,8 @@ def edit_article(article_id):
 
     return render_template('create_article.html', form=form, is_edit=True, article=article_obj)
 
+
+# --- Dashboard pages ---
 
 @app.route('/dashboard')
 @role_required(['admin'])
@@ -1113,6 +1145,7 @@ def dashboard_articles():
     articles = query.order_by(sort_map.get(sort, Article.created_at.desc())).all()
     if search:
         articles = [article_obj for article_obj in articles if article_matches_search(article_obj, search)]
+    # Templates receive prebuilt links because reserved page tags use special URLs.
     article_links = {article_obj.id: article_public_url(article_obj) for article_obj in articles}
     author_users = active_users_by_username(article_obj.author for article_obj in articles)
 
@@ -1194,6 +1227,8 @@ def remove_hero_banner():
     return redirect(url_for('dashboard_settings'))
 
 
+# --- Admin and reviewer actions ---
+
 @app.route('/set-role/<int:user_id>', methods=['POST'])
 @role_required(['admin'])
 def set_role(user_id):
@@ -1202,6 +1237,7 @@ def set_role(user_id):
 
     if form.validate_on_submit():
         user = User.query.get_or_404(user_id)
+        # MainAdmin and self-protection rules reduce the chance of locking out all admins.
         if user.username == 'MainAdmin':
             flash('Cannot change MainAdmin role.', 'danger')
             return redirect(dashboard_return_url('dashboard_users'))
@@ -1339,6 +1375,7 @@ def archive_own_article(article_id):
         abort(403)
 
     if not article_obj.is_archived:
+        # Pending edits are discarded when the owner hides the article.
         ArticleRevision.query.filter_by(article_id=article_obj.id, status='pending').delete()
     article_obj.is_archived = not article_obj.is_archived
     article_obj.archived_at = datetime.utcnow() if article_obj.is_archived else None
@@ -1346,6 +1383,8 @@ def archive_own_article(article_id):
     flash(f"Article {'archived' if article_obj.is_archived else 'restored'}: {article_obj.title}", 'info')
     return redirect(url_for('my_pages'))
 
+
+# --- Final public article route ---
 
 @app.route('/article/<article_title>')
 def article(article_title):

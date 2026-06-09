@@ -5,6 +5,8 @@ from flask_wtf.file import FileAllowed, FileSize
 from wtforms import BooleanField, FileField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 
+
+# These upload constants are reused so profile, article, and banner images follow one policy.
 MAX_IMAGE_UPLOAD_SIZE = 5 * 1024 * 1024
 IMAGE_UPLOAD_SIZE_MESSAGE = "Image must be 5 MB or smaller."
 IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"]
@@ -34,6 +36,7 @@ class RegisterForm(FlaskForm):
 class RoleForm(FlaskForm):
     """Admin role assignment form."""
 
+    # Choices match the role strings enforced by role_required() in main.py.
     role = SelectField("Role", choices=[
         ("user", "User"),
         ("writer", "Writer"),

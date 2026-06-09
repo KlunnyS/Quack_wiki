@@ -10,6 +10,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 db = SQLAlchemy()
 
 
+# Flask-Login reads id/is_authenticated from UserMixin; SQLAlchemy maps the fields below.
 class User(db.Model, UserMixin):
     """Application account with login data, role, and public profile fields."""
 
@@ -34,6 +35,7 @@ class User(db.Model, UserMixin):
         return check_password_hash(self.password_hash, password)
 
 
+# Articles keep the approved/live version of each wiki page.
 class Article(db.Model):
     """Live article record shown publicly after approval."""
 
@@ -53,6 +55,7 @@ class Article(db.Model):
     archived_at = db.Column(db.DateTime, nullable=True)
 
 
+# Revisions hold proposed changes until a reviewer applies or discards them.
 class ArticleRevision(db.Model):
     """Pending article update awaiting reviewer approval."""
 
@@ -70,6 +73,7 @@ class ArticleRevision(db.Model):
     article = db.relationship('Article', backref=db.backref('revisions', lazy=True))
 
 
+# SiteSettings is intentionally a singleton row, created with id=1 during app startup.
 class SiteSettings(db.Model):
     """Singleton table for site-wide display settings."""
 
