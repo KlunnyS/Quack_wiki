@@ -27,3 +27,14 @@ $env:QUACK_HOST = "127.0.0.1"
 $env:QUACK_PORT = "8000"
 python run.py
 ```
+
+## Deploy command
+
+For cloud hosting, use:
+
+```bash
+python run.py deploy
+```
+
+Deploy mode reads the hosting provider's `PORT` environment variable, disables
+Flask debug mode, and uses `gunicorn` on Linux hosts.

@@ -1,8 +1,8 @@
-"""Local startup helper for Quack Wiki.
+"""Startup helper for Quack Wiki.
 
 Run this file with the system Python. It creates a project virtual environment
-when needed, installs the runtime dependencies, and hosts the Flask development
-server locally.
+when needed, installs the runtime dependencies, and starts either the local
+Flask development server or a production server for hosting.
 """
 
 import os
@@ -11,8 +11,9 @@ import subprocess
 import sys
 
 
-HOST = os.environ.get("QUACK_HOST", "0.0.0.0")
-PORT = os.environ.get("QUACK_PORT", "5000")
+DEPLOY_MODE = any(arg.lower() in {"deploy", "prod", "production"} for arg in sys.argv[1:])
+HOST = os.environ.get("QUACK_HOST") or os.environ.get("HOST") or "0.0.0.0"
+PORT = os.environ.get("QUACK_PORT") or os.environ.get("PORT") or "5000"
 
 
 def get_lan_ip():
@@ -45,10 +46,11 @@ else:
 
 print("Aktivujem virtualne prostredie...")
 
-# Make sure pip is present in newly created venvs, then upgrade packaging tools.
+# Make sure pip is present in newly created venvs.
 print("Kontrolujem pip...")
 subprocess.check_call([python_bin, "-m", "ensurepip", "--upgrade"])
-subprocess.check_call([python_bin, "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"])
+if os.environ.get("QUACK_UPGRADE_PIP") == "1":
+    subprocess.check_call([python_bin, "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"])
 
 # Ensure the packages imported by main.py/forms.py/models.py are installed.
 required_packages = [
@@ -61,6 +63,8 @@ required_packages = [
     "werkzeug",
     "wtforms",
 ]
+if DEPLOY_MODE and os.name != "nt":
+    required_packages.append("gunicorn")
 
 print("Kontrolujem potrebne balicky...")
 for pkg in required_packages:
@@ -70,33 +74,46 @@ for pkg in required_packages:
         print(f"Instalujem {pkg}...")
         subprocess.check_call([python_bin, "-m", "pip", "install", pkg])
 
-# Start Flask in debug mode for local development.
 print("\n==========================================")
-print("Spustam Flask aplikaciu...")
-print(f"Na tomto pocitaci otvor: http://127.0.0.1:{PORT}")
-if HOST in {"0.0.0.0", "::"}:
-    print(f"Na inom zariadeni v rovnakej sieti otvor: http://{get_lan_ip()}:{PORT}")
+if DEPLOY_MODE:
+    print("Spustam Flask aplikaciu v deploy rezime...")
+    print(f"Server pocuva na: {HOST}:{PORT}")
 else:
-    print(f"Server bude pocuvat iba na hoste: {HOST}")
+    print("Spustam Flask aplikaciu...")
+    print(f"Na tomto pocitaci otvor: http://127.0.0.1:{PORT}")
+    if HOST in {"0.0.0.0", "::"}:
+        print(f"Na inom zariadeni v rovnakej sieti otvor: http://{get_lan_ip()}:{PORT}")
+    else:
+        print(f"Server bude pocuvat iba na hoste: {HOST}")
 print("==========================================\n")
 
 env = os.environ.copy()
 env["FLASK_APP"] = "main.py"
-env["FLASK_DEBUG"] = "1"
+env["FLASK_DEBUG"] = "0" if DEPLOY_MODE else "1"
 
-subprocess.check_call([
-    python_bin,
-    "-m",
-    "flask",
-    "run",
-    "--debug",
-    "--host",
-    HOST,
-    "--port",
-    PORT,
-], env=env)
+if DEPLOY_MODE and os.name != "nt":
+    subprocess.check_call([
+        python_bin,
+        "-m",
+        "gunicorn",
+        "--bind",
+        f"{HOST}:{PORT}",
+        "main:app",
+    ], env=env)
+else:
+    subprocess.check_call([
+        python_bin,
+        "-m",
+        "flask",
+        "run",
+        "--host",
+        HOST,
+        "--port",
+        PORT,
+    ], env=env)
 
 print("\n==========================================")
 print("Flask server bol ukonceny.")
 print("==========================================")
-input("Stlac lubovolnu klavesu pre zatvorenie okna...")
+if sys.stdin.isatty() and not DEPLOY_MODE:
+    input("Stlac lubovolnu klavesu pre zatvorenie okna...")
