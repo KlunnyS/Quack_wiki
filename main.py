@@ -30,8 +30,13 @@ MAX_UPLOAD_SIZE_MB = 50
 MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '#K0nMykvNSC3OyQcA'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pages.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+if not app.config['SECRET_KEY']:
+    if os.environ.get('FLASK_ENV') == 'production':
+        raise RuntimeError('SECRET_KEY must be set in production.')
+    app.config['SECRET_KEY'] = 'dev-only-change-me'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///pages.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_SIZE_BYTES
 app.config['UPLOAD_FOLDER'] = 'static/img/upload'

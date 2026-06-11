@@ -1,15 +1,9 @@
 """Initial data seeding for local Quack Wiki installs."""
 
 from datetime import datetime
+import os
 
 from models import User, db
-
-
-# These accounts are created only when neither their username nor email exists.
-INITIAL_USERS = [
-    ("MainAdmin", "MainAdmin@quack.sk", "admin", "Admin67n01"),
-    ("TadeasNevrela", "TadeasNevrela@s.zochova.sk", "user", "123456"),
-]
 
 
 def _build_user(username: str, email: str, role: str, password: str) -> User:
@@ -25,17 +19,16 @@ def _build_user(username: str, email: str, role: str, password: str) -> User:
 
 
 def seed_admin():
-    """Create required initial users when they do not already exist."""
-    created = 0
-    for username, email, role, password in INITIAL_USERS:
-        exists = User.query.filter(
-            (User.username == username) | (User.email == email)
-        ).first()
-        if exists:
-            continue
+    """Create an initial admin only when configured through environment variables."""
+    password = os.environ.get('INITIAL_ADMIN_PASSWORD')
+    if not password:
+        return
 
-        db.session.add(_build_user(username, email, role, password))
-        created += 1
-
-    if created:
+    username = os.environ.get('INITIAL_ADMIN_USERNAME', 'MainAdmin')
+    email = os.environ.get('INITIAL_ADMIN_EMAIL', 'admin@example.com')
+    exists = User.query.filter(
+        (User.username == username) | (User.email == email)
+    ).first()
+    if not exists:
+        db.session.add(_build_user(username, email, 'admin', password))
         db.session.commit()
