@@ -31,8 +31,8 @@ python run.py
 ## Deploy on Railway
 
 This repo is ready for Railway's Python builder. Railway detects the Python app
-from `requirements.txt` and uses `railway.json` for the production start command
-and health check.
+from `requirements.txt`, installs packages such as `SQLAlchemy`, and uses
+`railway.json` for the production start command and health check.
 
 1. Push this repository to GitHub.
 2. In Railway, create a new project from the GitHub repo.
@@ -59,6 +59,10 @@ protections to apply. After the first successful login, set
 in the database.
 
 5. Generate a public Railway domain for the app service.
+
+If Railway reports `ModuleNotFoundError` for a package listed in
+`requirements.txt`, make sure the latest `requirements.txt` and `railway.json`
+are pushed to GitHub, then redeploy the app service.
 
 Railway will use this start command from `railway.json`:
 

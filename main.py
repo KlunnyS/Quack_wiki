@@ -114,7 +114,10 @@ def cleanup_unused_images():
             if not os.path.isfile(file_path):
                 continue
             if f"{folder_key}/{filename}" not in referenced_paths:
-                os.remove(file_path)
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    app.logger.warning("Could not remove unused image: %s", file_path, exc_info=True)
 
 
 def ensure_user_profile_columns():
