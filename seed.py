@@ -3,6 +3,8 @@
 from datetime import datetime
 import os
 
+from sqlalchemy.exc import IntegrityError
+
 from models import User, db
 
 
@@ -34,5 +36,9 @@ def seed_admin():
         return 0
 
     db.session.add(_build_user(username, email, 'admin', password))
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return 0
     return 1

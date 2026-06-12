@@ -11,7 +11,7 @@ import re
 import unicodedata
 from urllib.parse import urlparse, urljoin
 from sqlalchemy import func
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from functools import wraps
 from uuid import uuid4
 
@@ -139,11 +139,15 @@ def ensure_user_profile_columns():
 
 def get_site_settings():
     """Return the singleton site settings row, creating it on first run."""
-    settings = SiteSettings.query.get(1)
+    settings = db.session.get(SiteSettings, 1)
     if not settings:
         settings = SiteSettings(id=1)
         db.session.add(settings)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            settings = db.session.get(SiteSettings, 1)
     return settings
 
 
