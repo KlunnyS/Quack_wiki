@@ -28,15 +28,51 @@ from seed import seed_admin
 
 MAX_UPLOAD_SIZE_MB = 50
 MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_ENV = os.environ.get('QUACK_ENV') or os.environ.get('FLASK_ENV') or 'development'
+IS_PRODUCTION = APP_ENV.lower() == 'production'
+
+
+def env_bool(name, default=False):
+    """Read a boolean setting from environment variables."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def database_uri():
+    """Return the configured database URI, defaulting to the app instance DB."""
+    uri = os.environ.get('QUACK_DATABASE_URI') or os.environ.get('DATABASE_URL')
+    if uri:
+        # Some hosts still expose old-style postgres:// URLs.
+        if uri.startswith('postgres://'):
+            uri = uri.replace('postgres://', 'postgresql://', 1)
+        return uri
+    return 'sqlite:///' + os.path.join(BASE_DIR, 'instance', 'pages.db')
+
+
+def secret_key():
+    """Require an explicit secret in production; use a local-only fallback otherwise."""
+    key = os.environ.get('QUACK_SECRET_KEY') or os.environ.get('SECRET_KEY')
+    if key:
+        return key
+    if IS_PRODUCTION:
+        raise RuntimeError('Set QUACK_SECRET_KEY before running Quack Wiki in production.')
+    return 'dev-only-change-me'
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '#K0nMykvNSC3OyQcA'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pages.db'
+app.config['SECRET_KEY'] = secret_key()
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_SIZE_BYTES
-app.config['UPLOAD_FOLDER'] = 'static/img/upload'
-app.config['PROFILE_UPLOAD_FOLDER'] = 'static/img/profile'
-app.config['SITE_UPLOAD_FOLDER'] = 'static/img/site'
+app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'img', 'upload')
+app.config['PROFILE_UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'img', 'profile')
+app.config['SITE_UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'img', 'site')
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = env_bool('QUACK_SESSION_COOKIE_SECURE', IS_PRODUCTION)
+app.config['PREFERRED_URL_SCHEME'] = 'https' if IS_PRODUCTION else 'http'
 
 db.init_app(app)
 
@@ -83,6 +119,9 @@ def cleanup_unused_images():
 
 def ensure_user_profile_columns():
     """Add profile columns to older SQLite databases created before profiles existed."""
+    if not app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        return
+
     columns = db.session.execute(text("PRAGMA table_info(user)")).fetchall()
     column_names = {column[1] for column in columns}
     if 'profile_image_url' not in column_names:
@@ -113,7 +152,8 @@ with app.app_context():
     os.makedirs(app.config['SITE_UPLOAD_FOLDER'], exist_ok=True)
     ensure_user_profile_columns()
     get_site_settings()
-    seed_admin()
+    if not IS_PRODUCTION or env_bool('QUACK_SEED_INITIAL_USERS'):
+        seed_admin()
     cleanup_unused_images()
 
 login_manager = LoginManager()
@@ -128,6 +168,12 @@ def handle_upload_too_large(error):
     """Show a friendly message when an upload exceeds the global request limit."""
     flash(f'Upload is too large. Maximum file size is {MAX_UPLOAD_SIZE_MB} MB.', 'danger')
     return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/healthz')
+def healthz():
+    """Lightweight deployment health check."""
+    return 'ok', 200
 
 
 @app.context_processor

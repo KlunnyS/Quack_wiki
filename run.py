@@ -13,6 +13,7 @@ import sys
 
 HOST = os.environ.get("QUACK_HOST", "0.0.0.0")
 PORT = os.environ.get("QUACK_PORT", "5000")
+DEBUG = os.environ.get("QUACK_DEBUG", "1").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def get_lan_ip():
@@ -70,7 +71,7 @@ for pkg in required_packages:
         print(f"Instalujem {pkg}...")
         subprocess.check_call([python_bin, "-m", "pip", "install", pkg])
 
-# Start Flask in debug mode for local development.
+# Start Flask for local development.
 print("\n==========================================")
 print("Spustam Flask aplikaciu...")
 print(f"Na tomto pocitaci otvor: http://127.0.0.1:{PORT}")
@@ -82,19 +83,23 @@ print("==========================================\n")
 
 env = os.environ.copy()
 env["FLASK_APP"] = "main.py"
-env["FLASK_DEBUG"] = "1"
+env["QUACK_ENV"] = env.get("QUACK_ENV", "development")
+env["FLASK_DEBUG"] = "1" if DEBUG else "0"
 
-subprocess.check_call([
+command = [
     python_bin,
     "-m",
     "flask",
     "run",
-    "--debug",
     "--host",
     HOST,
     "--port",
     PORT,
-], env=env)
+]
+if DEBUG:
+    command.insert(4, "--debug")
+
+subprocess.check_call(command, env=env)
 
 print("\n==========================================")
 print("Flask server bol ukonceny.")
