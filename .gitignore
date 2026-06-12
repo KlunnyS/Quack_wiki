@@ -1,3 +1,10 @@
 .venv
 .env
 __pycache__
+*.pyc
+instance/*.db
+*.sqlite
+*.sqlite3
+static/img/upload/
+static/img/profile/
+static/img/site/
