@@ -5,7 +5,7 @@ from datetime import datetime
 from models import User, db
 
 
-# These accounts are created only when neither their username nor email exists.
+# These accounts are created only when neither their username nor email exists. Dummy quack accounts for testing purposes have password 123456789
 INITIAL_USERS = [
     ("MainAdmin", "MainAdmin@quack.sk", "admin", "Admin67n01"),
     ("TadeasNevrela", "TadeasNevrela@s.zochova.sk", "user", "123456"),
