@@ -137,6 +137,15 @@ def ensure_user_profile_columns():
         db.session.commit()
 
 
+def ensure_password_hash_column_capacity():
+    """Allow modern Werkzeug password hashes in older PostgreSQL deployments."""
+    if db.engine.dialect.name != 'postgresql':
+        return
+
+    db.session.execute(text('ALTER TABLE "user" ALTER COLUMN password_hash TYPE TEXT'))
+    db.session.commit()
+
+
 def get_site_settings():
     """Return the singleton site settings row, creating it on first run."""
     settings = db.session.get(SiteSettings, 1)
@@ -158,6 +167,7 @@ with app.app_context():
     os.makedirs(app.config['PROFILE_UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['SITE_UPLOAD_FOLDER'], exist_ok=True)
     ensure_user_profile_columns()
+    ensure_password_hash_column_capacity()
     get_site_settings()
     if not IS_PRODUCTION or env_bool('QUACK_SEED_INITIAL_USERS'):
         seed_admin()
